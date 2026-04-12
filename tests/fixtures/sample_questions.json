@@ -1,0 +1,52 @@
+[
+  {
+    "question": "What is the total revenue for Q1 2025?",
+    "expected_contains": ["EVALUATE", "Total Revenue", "Q1 2025"],
+    "category": "revenue"
+  },
+  {
+    "question": "Show me load factor for RUH-LHR last month",
+    "expected_contains": ["EVALUATE", "Load Factor", "RUH-LHR"],
+    "category": "load_factor"
+  },
+  {
+    "question": "Top 5 routes by passenger count this quarter",
+    "expected_contains": ["EVALUATE", "TOPN", "Total Pax"],
+    "category": "ranking"
+  },
+  {
+    "question": "Compare Business vs Economy revenue on JED-LHR",
+    "expected_contains": ["EVALUATE", "Cabin Class", "JED-LHR", "Total Revenue"],
+    "category": "comparison"
+  },
+  {
+    "question": "What is the average fare on RUH-CDG for 2025?",
+    "expected_contains": ["EVALUATE", "Avg Fare", "RUH-CDG"],
+    "category": "fare"
+  },
+  {
+    "question": "Show me RASK trend by month for RUH-LHR",
+    "expected_contains": ["EVALUATE", "RASK", "Month", "RUH-LHR"],
+    "category": "trend"
+  },
+  {
+    "question": "Which routes have load factor below 65%?",
+    "expected_contains": ["EVALUATE", "Load Factor"],
+    "category": "threshold"
+  },
+  {
+    "question": "Total bookings for Jeddah routes in Q4 2024",
+    "expected_contains": ["EVALUATE", "Booking Count", "JED"],
+    "category": "bookings"
+  },
+  {
+    "question": "Yield comparison across all European routes",
+    "expected_contains": ["EVALUATE", "Yield"],
+    "category": "yield"
+  },
+  {
+    "question": "Revenue per route for last 30 days",
+    "expected_contains": ["EVALUATE", "Total Revenue", "Route Pair"],
+    "category": "revenue"
+  }
+]
