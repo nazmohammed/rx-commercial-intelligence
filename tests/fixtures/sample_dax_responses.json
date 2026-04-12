@@ -1,0 +1,17 @@
+{
+  "results": [
+    {
+      "tables": [
+        {
+          "rows": [
+            {"[Route Pair]": "RUH-LHR", "[Revenue]": 45200000, "[Pax]": 12400},
+            {"[Route Pair]": "RUH-CDG", "[Revenue]": 31800000, "[Pax]": 9200},
+            {"[Route Pair]": "JED-LHR", "[Revenue]": 28500000, "[Pax]": 8700},
+            {"[Route Pair]": "RUH-BKK", "[Revenue]": 22100000, "[Pax]": 11500},
+            {"[Route Pair]": "RUH-SIN", "[Revenue]": 19400000, "[Pax]": 6300}
+          ]
+        }
+      ]
+    }
+  ]
+}
