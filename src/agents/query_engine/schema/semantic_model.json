@@ -1,0 +1,77 @@
+{
+  "model": {
+    "name": "Routes Insights - Flyr",
+    "workspace_id": "4435d932-4c62-46fd-ba3f-dd41a0d6d2f4",
+    "dataset_id": "b047fe92-8b73-4f06-a2ae-e75b9b9363a0"
+  },
+  "tables": [
+    {
+      "name": "Fact Bookings",
+      "description": "Booking-level transactional data",
+      "columns": [
+        "BookingID", "BookingDate", "RouteKey", "CabinKey", "DateKey",
+        "MarketKey", "FareClassKey", "Revenue", "PaxCount", "BookingStatus"
+      ]
+    },
+    {
+      "name": "Fact Flights",
+      "description": "Flight-level operational data",
+      "columns": [
+        "FlightID", "FlightDate", "RouteKey", "DateKey",
+        "SeatCapacity", "PaxCarried", "ASK", "RPK", "FlightStatus"
+      ]
+    },
+    {
+      "name": "Dim Routes",
+      "description": "Route master dimension",
+      "columns": [
+        "RouteKey", "Origin", "Destination", "Route Pair",
+        "Region", "Distance_KM", "FlightDuration"
+      ]
+    },
+    {
+      "name": "Dim Date",
+      "description": "Date dimension",
+      "columns": [
+        "DateKey", "Date", "Day", "Month", "MonthNum",
+        "Quarter", "Year", "WeekOfYear", "DayOfWeek", "IsWeekend"
+      ]
+    },
+    {
+      "name": "Dim Cabin",
+      "description": "Cabin class dimension",
+      "columns": ["CabinKey", "Cabin Class"]
+    },
+    {
+      "name": "Dim Market",
+      "description": "Market segmentation dimension",
+      "columns": ["MarketKey", "Market Type", "O&D Pair"]
+    },
+    {
+      "name": "Dim Fare Class",
+      "description": "Fare bucket / RBD classification",
+      "columns": ["FareClassKey", "Fare Class", "RBD", "Fare Bucket"]
+    }
+  ],
+  "measures": [
+    {"name": "Total Revenue", "description": "Total booking revenue in SAR", "format": "Currency"},
+    {"name": "Total Pax", "description": "Total passenger count", "format": "Integer"},
+    {"name": "Load Factor", "description": "RPK / ASK — seat utilization %", "format": "Percentage"},
+    {"name": "Yield", "description": "Revenue per RPK", "format": "Decimal"},
+    {"name": "RASK", "description": "Revenue per ASK", "format": "Decimal"},
+    {"name": "ASK", "description": "Available Seat Kilometers", "format": "Integer"},
+    {"name": "RPK", "description": "Revenue Passenger Kilometers", "format": "Integer"},
+    {"name": "Avg Fare", "description": "Average fare per passenger in SAR", "format": "Currency"},
+    {"name": "Booking Count", "description": "Number of bookings", "format": "Integer"},
+    {"name": "Seat Capacity", "description": "Total seats offered on flights", "format": "Integer"}
+  ],
+  "relationships": [
+    {"from": "Fact Bookings.RouteKey", "to": "Dim Routes.RouteKey"},
+    {"from": "Fact Bookings.DateKey", "to": "Dim Date.DateKey"},
+    {"from": "Fact Bookings.CabinKey", "to": "Dim Cabin.CabinKey"},
+    {"from": "Fact Bookings.MarketKey", "to": "Dim Market.MarketKey"},
+    {"from": "Fact Bookings.FareClassKey", "to": "Dim Fare Class.FareClassKey"},
+    {"from": "Fact Flights.RouteKey", "to": "Dim Routes.RouteKey"},
+    {"from": "Fact Flights.DateKey", "to": "Dim Date.DateKey"}
+  ]
+}
