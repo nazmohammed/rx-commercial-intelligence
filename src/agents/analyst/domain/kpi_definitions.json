@@ -1,0 +1,47 @@
+{
+  "kpis": {
+    "load_factor": {
+      "description": "Seat utilization — RPK divided by ASK",
+      "formula": "RPK / ASK * 100",
+      "unit": "%",
+      "thresholds": {
+        "excellent": {"min": 85, "label": "Strong demand — consider upgauging"},
+        "good": {"min": 80, "label": "Healthy utilization"},
+        "warning": {"min": 65, "label": "Below target — review pricing/schedule"},
+        "critical": {"max": 65, "label": "Viability risk — immediate review needed"}
+      }
+    },
+    "yield": {
+      "description": "Revenue per Revenue Passenger Kilometer",
+      "formula": "Total Revenue / RPK",
+      "unit": "SAR/RPK",
+      "context": "Compare against network average. Premium routes should be 15%+ above average."
+    },
+    "rask": {
+      "description": "Revenue per Available Seat Kilometer",
+      "formula": "Total Revenue / ASK",
+      "unit": "SAR/ASK",
+      "context": "Should be growing QoQ. Flat or declining signals demand or pricing issues."
+    },
+    "total_revenue": {
+      "description": "Total booking revenue",
+      "unit": "SAR",
+      "context": "Compare against budget target and prior year."
+    },
+    "avg_fare": {
+      "description": "Average fare per passenger",
+      "formula": "Total Revenue / Total Pax",
+      "unit": "SAR",
+      "thresholds": {
+        "growth": {"label": "Healthy pricing power"},
+        "decline_mild": {"max_pct_change": -3, "label": "Monitor — competitive pressure?"},
+        "decline_severe": {"max_pct_change": -5, "label": "Pricing erosion — review fare strategy"}
+      }
+    },
+    "booking_count": {
+      "description": "Total number of bookings",
+      "unit": "count",
+      "context": "Leading indicator — decline precedes revenue drop by 2-4 weeks."
+    }
+  }
+}
