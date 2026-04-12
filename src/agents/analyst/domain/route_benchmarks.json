@@ -1,0 +1,48 @@
+{
+  "network_averages": {
+    "load_factor_pct": 78,
+    "yield_sar_rpk": 0.32,
+    "rask_sar_ask": 0.25,
+    "avg_fare_sar": 2800,
+    "note": "Baseline averages across full network — update quarterly."
+  },
+  "seasonal_adjustments": {
+    "Q1": {
+      "jed_routes_uplift_pct": 25,
+      "context": "Peak Umrah season — JED hub sees significant traffic increase."
+    },
+    "Q2": {
+      "domestic_dip_pct": -10,
+      "europe_uplift_pct": 8,
+      "context": "Ramadan — domestic softens, European routes strengthen."
+    },
+    "Q3": {
+      "europe_leisure_uplift_pct": 15,
+      "context": "Summer peak — European leisure routes at maximum."
+    },
+    "Q4": {
+      "jed_hajj_spike_pct": 35,
+      "business_recovery_pct": 10,
+      "context": "Hajj season (JED), followed by Q4 business travel recovery."
+    }
+  },
+  "route_viability": {
+    "new_route_min_lf_6m": 65,
+    "upgauge_threshold_lf": 75,
+    "premium_yield_premium_pct": 15,
+    "high_lf_low_yield_flag": {
+      "lf_min": 85,
+      "yield_below_avg_pct": -10,
+      "action": "Review fare mix — high volume but underpriced."
+    }
+  },
+  "key_routes": [
+    {"pair": "RUH-LHR", "type": "flagship", "benchmark_lf": 82},
+    {"pair": "RUH-CDG", "type": "premium_leisure", "benchmark_lf": 79},
+    {"pair": "JED-LHR", "type": "umrah_business", "benchmark_lf": 80},
+    {"pair": "RUH-BKK", "type": "leisure", "benchmark_lf": 85},
+    {"pair": "RUH-SIN", "type": "business", "benchmark_lf": 76},
+    {"pair": "RUH-MNL", "type": "labor", "benchmark_lf": 90},
+    {"pair": "RUH-DXB", "type": "regional_shuttle", "benchmark_lf": 72}
+  ]
+}
