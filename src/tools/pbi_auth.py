@@ -1,38 +1,38 @@
-"""Power BI service-principal authentication via MSAL."""
+"""Power BI authentication via DefaultAzureCredential (managed identity).
 
-import os
-import msal
+Uses the same system-assigned managed identity that calls Foundry agents.
+In production (Container Apps) this uses the MI; locally it falls back to
+Azure CLI / VS Code / environment credentials.
+"""
 
-_TOKEN_CACHE: dict = {}
+from azure.identity.aio import DefaultAzureCredential
+
+PBI_SCOPE = "https://analysis.windows.net/powerbi/api/.default"
+
+# Module-level credential — reused across requests (handles token caching internally)
+_credential: DefaultAzureCredential | None = None
 
 
-def get_pbi_access_token() -> str:
-    """Acquire a Power BI REST API access token using client credentials.
+def _get_credential() -> DefaultAzureCredential:
+    global _credential
+    if _credential is None:
+        _credential = DefaultAzureCredential()
+    return _credential
 
-    Returns the bearer token string. Caches until expiry.
+
+async def get_pbi_access_token() -> str:
+    """Acquire a Power BI REST API access token using DefaultAzureCredential.
+
+    Returns the bearer token string. The credential handles caching internally.
     """
-    cached = _TOKEN_CACHE.get("token")
-    if cached:
-        return cached
+    credential = _get_credential()
+    token = await credential.get_token(PBI_SCOPE)
+    return token.token
 
-    tenant_id = os.environ["PBI_TENANT_ID"]
-    client_id = os.environ["PBI_CLIENT_ID"]
-    client_secret = os.environ["PBI_CLIENT_SECRET"]
 
-    authority = f"https://login.microsoftonline.com/{tenant_id}"
-    app = msal.ConfidentialClientApplication(
-        client_id,
-        authority=authority,
-        client_credential=client_secret,
-    )
-
-    result = app.acquire_token_for_client(
-        scopes=["https://analysis.windows.net/powerbi/api/.default"]
-    )
-
-    if "access_token" not in result:
-        error = result.get("error_description", result.get("error", "Unknown MSAL error"))
-        raise RuntimeError(f"PBI auth failed: {error}")
-
-    _TOKEN_CACHE["token"] = result["access_token"]
-    return result["access_token"]
+async def close_credential() -> None:
+    """Close the credential when shutting down."""
+    global _credential
+    if _credential is not None:
+        await _credential.close()
+        _credential = None
