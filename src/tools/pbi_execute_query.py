@@ -41,8 +41,8 @@ async def execute_dax_query(dax_query: str) -> dict:
     }
 
     try:
-        token = get_pbi_access_token()
-    except RuntimeError as e:
+        token = await get_pbi_access_token()
+    except Exception as e:
         logger.error("pbi_auth_failed", error=str(e))
         return {
             "success": False,
