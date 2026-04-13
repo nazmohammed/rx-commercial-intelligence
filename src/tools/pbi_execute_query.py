@@ -16,11 +16,16 @@ logger = structlog.get_logger(__name__)
 PBI_API_BASE = "https://api.powerbi.com/v1.0/myorg"
 
 
-async def execute_dax_query(dax_query: str) -> dict:
+async def execute_dax_query(
+    dax_query: str, user_principal_name: str | None = None
+) -> dict:
     """Execute a DAX query against the configured Power BI dataset.
 
     Args:
         dax_query: A valid DAX query string (e.g. EVALUATE SUMMARIZECOLUMNS(...))
+        user_principal_name: UPN (email) of the Teams user. When provided, the
+            query is executed under PBI Row-Level Security for that user via
+            the ``impersonatedUser`` API parameter.
 
     Returns:
         dict with keys:
@@ -35,10 +40,14 @@ async def execute_dax_query(dax_query: str) -> dict:
 
     url = f"{PBI_API_BASE}/groups/{workspace_id}/datasets/{dataset_id}/executeQueries"
 
-    payload = {
+    payload: dict = {
         "queries": [{"query": dax_query}],
         "serializerSettings": {"includeNulls": True},
     }
+
+    # Enforce RLS — MI authenticates, but the query runs as the real user
+    if user_principal_name:
+        payload["impersonatedUser"] = {"username": user_principal_name}
 
     try:
         token = await get_pbi_access_token()
