@@ -33,8 +33,20 @@ class Coordinator:
         self.query_engine_agent_id = os.environ["FOUNDRY_QUERY_ENGINE_AGENT_ID"]
         self.analyst_agent_id = os.environ["FOUNDRY_ANALYST_AGENT_ID"]
 
-    async def process(self, user_question: str, state: ConversationState) -> dict:
-        """Run the full pipeline and return a dict with 'card', 'dax', 'summary'."""
+    async def process(
+        self,
+        user_question: str,
+        state: ConversationState,
+        user_principal_name: str | None = None,
+    ) -> dict:
+        """Run the full pipeline and return a dict with 'card', 'dax', 'summary'.
+
+        Args:
+            user_question: The natural-language question from the Teams user.
+            state: Conversation turn state.
+            user_principal_name: UPN (email) of the Teams user for PBI RLS.
+        """
+        self._current_upn = user_principal_name
 
         credential = DefaultAzureCredential()
 
@@ -60,7 +72,7 @@ class Coordinator:
 
                 # Poll until complete, handling tool calls
                 qe_run = await self._poll_run_with_tools(
-                    client, qe_thread.id, qe_run.id
+                    client, qe_thread.id, qe_run.id, user_principal_name
                 )
 
                 # Get QueryEngine response
@@ -129,7 +141,9 @@ class Coordinator:
         finally:
             await credential.close()
 
-    async def _poll_run_with_tools(self, client, thread_id: str, run_id: str):
+    async def _poll_run_with_tools(
+        self, client, thread_id: str, run_id: str, user_principal_name: str | None = None
+    ):
         """Poll a run, handling tool-call actions for execute_dax_query."""
         import asyncio
 
@@ -154,7 +168,9 @@ class Coordinator:
                         dax = args.get("dax_query", "")
                         logger.info("executing_dax_tool", dax=dax[:200])
 
-                        result = await execute_dax_query(dax)
+                        result = await execute_dax_query(
+                            dax, user_principal_name=user_principal_name
+                        )
                         tool_outputs.append({
                             "tool_call_id": tc.id,
                             "output": json.dumps(result),
