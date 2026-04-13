@@ -24,6 +24,18 @@ class RXBot(ActivityHandler):
         conversation_id = turn_context.activity.conversation.id
         user_name = turn_context.activity.from_property.name or "User"
 
+        # Extract UPN for PBI Row-Level Security enforcement
+        user_principal_name = getattr(
+            turn_context.activity.from_property, "aad_object_id", None
+        )
+        # In Teams, the UPN (email) is available via the channel-specific data
+        if not user_principal_name:
+            channel_data = turn_context.activity.channel_data or {}
+            user_principal_name = (
+                channel_data.get("user", {}).get("userPrincipalName")
+                or turn_context.activity.from_property.name
+            )
+
         logger.info(
             "message_received",
             user=user_name,
@@ -47,7 +59,9 @@ class RXBot(ActivityHandler):
 
         try:
             # Run the full pipeline: QueryEngine → Analyst → Card
-            result = await self.coordinator.process(user_message, state)
+            result = await self.coordinator.process(
+                user_message, state, user_principal_name=user_principal_name
+            )
 
             # Update the thinking card with the real result
             card = CardFactory.adaptive_card(result["card"])
