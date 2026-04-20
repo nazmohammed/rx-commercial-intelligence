@@ -1,0 +1,41 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Local CLI — run_local",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.run_local",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Smoke test — PBI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.smoke_test_pbi",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Smoke test — Foundry",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.smoke_test_foundry",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Check env",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.check_env",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
