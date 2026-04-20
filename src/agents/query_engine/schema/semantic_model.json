@@ -2,6 +2,252 @@
   "model": {
     "name": "Routes Insights - Flyr",
     "workspace_id": "4435d932-4c62-46fd-ba3f-dd41a0d6d2f4",
+    "dataset_id": "b047fe92-8b73-4f06-a2ae-e75b9b9363a0",
+    "description": "Riyadh Air commercial semantic model covering flown actuals, forward bookings, forecasts, and targets at Segment (leg) and OD (origin-destination) grain."
+  },
+  "business_context": {
+    "aviation_kpis": ["ASK", "RPK", "RASK", "Yield", "Load Factor"],
+    "direction": {
+      "Flown": "Historical actuals (departed flights)",
+      "Forward": "Future bookings (not yet departed)"
+    },
+    "grain": {
+      "Segment": "Individual flight legs (e.g., RUH-LHR). Use Flight_Segment tables.",
+      "OD": "Full passenger journey / Origin-Destination (e.g., RUH-LHR-JFK). Use Flight_OD tables."
+    },
+    "capacity": {
+      "Lidded": "Capacity available for sale after revenue management restrictions",
+      "Physical": "Actual aircraft seat count"
+    }
+  },
+  "fact_tables": [
+    {
+      "name": "Flight_Segment_Capacity",
+      "grain": "One row per flight-segment-cabin-date",
+      "has_pos_data": false,
+      "notes": "Capacity + derived Flown/Forward capacity KPIs. Contains isFlown column.",
+      "key_columns": ["departureDate", "arrivalDate", "flightNumberMarketing", "cabinTypeCode", "route", "originAirport", "distance", "liddedCapacity", "isFlown"]
+    },
+    {
+      "name": "Flight_OD_Capacity",
+      "grain": "One row per OD-flight-cabin-date",
+      "has_pos_data": false,
+      "notes": "OD-level capacity KPIs. Contains isFlown column.",
+      "key_columns": ["departureDate", "originAirport", "destinationAirport", "cabinTypeCode", "distance", "liddedCapacity", "isFlown"]
+    },
+    {
+      "name": "Flight_Segment_POS",
+      "grain": "One row per passenger-segment-order",
+      "has_pos_data": true,
+      "notes": "Revenue, ancillary, POS attributes at segment level.",
+      "key_columns": ["orderPaxSegmentId", "paxType", "isFlown", "total_revenue_sar", "CountryKey", "RegionKey"]
+    },
+    {
+      "name": "Flight_OD_POS",
+      "grain": "One row per passenger-OD-order",
+      "has_pos_data": true,
+      "notes": "OD revenue and ancillary.",
+      "key_columns": ["orderPaxODId", "paxType", "isFlown", "total_revenue_sar", "CountryKey", "RegionKey"]
+    },
+    {
+      "name": "Segment_Forecast",
+      "grain": "Segment-level forecast",
+      "has_pos_data": false,
+      "notes": "Forward-looking predictions at segment grain."
+    },
+    {
+      "name": "Segment_Target",
+      "grain": "Segment-level targets",
+      "has_pos_data": false,
+      "notes": "Budgeted KPI goals at segment grain."
+    },
+    {
+      "name": "OD_Forecast",
+      "grain": "OD-level forecast",
+      "has_pos_data": false,
+      "notes": "Forward-looking predictions at OD grain."
+    },
+    {
+      "name": "OD_Target",
+      "grain": "OD-level targets",
+      "has_pos_data": false,
+      "notes": "Budgeted KPI goals at OD grain."
+    }
+  ],
+  "dimension_tables": [
+    {
+      "name": "Date Dim",
+      "key_column": "Date_Key",
+      "filter_columns": ["Date", "Month", "MonthName", "Year", "Period", "Week"]
+    },
+    {
+      "name": "DateofIssue",
+      "key_column": "DayDate",
+      "filter_columns": ["DayDate", "MonthStart"],
+      "notes": "Use for booking date filters (not departure date)."
+    },
+    {
+      "name": "Cabin_Dimension",
+      "key_column": "CabinTypeCode",
+      "filter_columns": ["CabinType"],
+      "allowed_values": {"CabinType": ["Economy", "Business", "Premium Economy"]}
+    },
+    {
+      "name": "Origin_Airport_Dimension",
+      "key_column": "airportCode",
+      "filter_columns": ["airportCode", "airportName"]
+    },
+    {
+      "name": "Destination_Airport_Dimension",
+      "key_column": "airportCode",
+      "filter_columns": ["airportCode", "airportName"]
+    },
+    {
+      "name": "Route_Dimension",
+      "key_column": "airportCode",
+      "filter_columns": ["airportCode", "Route"],
+      "notes": "Region linked via Route_Region_Dimension."
+    },
+    {
+      "name": "Route_Region_Dimension",
+      "key_column": "regionCode",
+      "filter_columns": ["regionCode", "regionName"]
+    },
+    {
+      "name": "POS_Dimension",
+      "key_column": "Country_Code",
+      "filter_columns": ["Country_Code", "regionCode"]
+    },
+    {
+      "name": "POS_Region_Dimension",
+      "key_column": "regionCode",
+      "filter_columns": ["regionCode"],
+      "notes": "POS geographic grouping."
+    },
+    {
+      "name": "Dim_Channels_Organization",
+      "key_column": "organizationId",
+      "filter_columns": ["Channel", "ChannelFamily", "ChannelCategory", "Direct or Indirect"]
+    },
+    {
+      "name": "Partnership_Dimension",
+      "key_column": "partnership",
+      "filter_columns": ["partnership"],
+      "notes": "Partnership/codeshare filtering."
+    },
+    {
+      "name": "Catalog_Products",
+      "key_column": "id",
+      "filter_columns": ["name", "ProductType", "AttachmentPoint"]
+    },
+    {
+      "name": "Catalog_Services",
+      "key_column": "id",
+      "filter_columns": ["name", "serviceType", "ServiceCode"],
+      "notes": "serviceType = 'Rtf' identifies ticket (ReadyToFly) revenue; use to exclude ancillary."
+    },
+    {
+      "name": "Segment Flight #",
+      "key_column": "flightNumberMarketing",
+      "filter_columns": ["flightNumberMarketing"]
+    }
+  ],
+  "measure_naming_convention": {
+    "pattern": "{Scope}_{Direction}_{KPI}_{Variant}",
+    "scope": ["Segment_", "OD_"],
+    "direction": ["Flown_", "Forward_", ""],
+    "kpi": ["ASK", "RPK", "RASK", "Load_Factor", "Pax_Yield", "Total_Yield", "Revenue", "Passengers", "Average_Fare"],
+    "variant": {
+      "_LY": "Same period last year",
+      "_vs_LY": "Absolute variance vs last year",
+      "_vs_LY_Var_%": "% variance vs last year",
+      "_Total": "Combined Flown + Forward",
+      "_Forecast": "Forecast values",
+      "_Target": "Target values"
+    },
+    "example": "Segment_Flown_ASK_vs_LY_Var_%"
+  },
+  "key_measures": [
+    {"name": "Total Revenue", "description": "Total revenue (ticket + ancillary) by flight departure date."},
+    {"name": "Passenger Revenue", "description": "Ticket-only revenue by flight departure date."},
+    {"name": "Average Fare", "description": "Total Revenue / Passenger Volume (includes ancillaries)."},
+    {"name": "Average Fare - Passenger only", "description": "Passenger Revenue / Passenger Volume (ticket only)."},
+    {"name": "Passengers (#)", "description": "Passenger count (flown or forward)."},
+    {"name": "Seat Capacity", "description": "Seats available for sale (flown or forward)."},
+    {"name": "RASK", "description": "Total Revenue / ASK."},
+    {"name": "Yield (Total)", "description": "Total Revenue / RPK."},
+    {"name": "Yield (Passenger)", "description": "Passenger Revenue / RPK."},
+    {"name": "Seat Factor", "description": "(RPK / ASK) * 100 — load factor %."},
+    {"name": "ASK", "description": "Total Seats Available * Distance."},
+    {"name": "Booking Velocity", "description": "Rate of bookings over a period."},
+    {"name": "OD Revenue", "description": "Total revenue for a specific OD pair."},
+    {"name": "OD Average Fare", "description": "OD Revenue / OD Passenger Volume."},
+    {"name": "OD Passenger Volume", "description": "Passengers for an OD pair."},
+    {"name": "Leg/Seg Revenue", "description": "Revenue for a specific leg/segment."},
+    {"name": "Leg/Seg Average Fare", "description": "Leg/Seg Revenue / Leg/Seg Passenger Volume."},
+    {"name": "Leg/Seg Passenger Volume", "description": "Passengers for a leg/segment."},
+    {"name": "Segment Ancillary Revenue", "description": "Ancillary revenue on a segment."},
+    {"name": "Segment Ancillary Average Spend", "description": "Ancillary Revenue / Ancillary Passengers."},
+    {"name": "Segment Ancillary Average Fare", "description": "Ancillary Revenue / Total Passengers."},
+    {"name": "Segment Ancillary Average Service", "description": "Ancillary Revenue / Ancillary Volume."},
+    {"name": "Segment Ancillary Passengers", "description": "Passengers who bought ancillary on a segment."},
+    {"name": "Segment Ancillary Volume", "description": "Ancillary units sold on a segment."},
+    {"name": "Segment Ancillary Uptake %", "description": "Ancillary Passengers / Total Passengers."},
+    {"name": "OD Ancillary Revenue", "description": "Ancillary revenue for an OD pair."},
+    {"name": "OD Ancillary Average Spend", "description": "OD Ancillary Revenue / Ancillary Passengers."},
+    {"name": "OD Ancillary Average Fare", "description": "OD Ancillary Revenue / Total Passengers."},
+    {"name": "OD Ancillary Average Service", "description": "OD Ancillary Revenue / Ancillary Volume."},
+    {"name": "OD Ancillary Passengers", "description": "Passengers who bought ancillary on an OD pair."},
+    {"name": "OD Ancillary Volume", "description": "Ancillary units sold on an OD pair."},
+    {"name": "OD Ancillary Uptake %", "description": "OD Ancillary Passengers / Total Passengers."},
+    {"name": "OD Seat Capacity", "description": "Total seats available for an OD pair."},
+    {"name": "OD Seat Booked", "description": "Total seats booked for an OD pair."},
+    {"name": "OD Seat Availability", "description": "Remaining seats available for an OD pair."}
+  ],
+  "relationships": [
+    {"from": "Flight_Segment_Capacity.departureDate", "to": "Date Dim.Date_Key", "cardinality": "m:1"},
+    {"from": "Flight_OD_Capacity.departureDate", "to": "Date Dim.Date_Key", "cardinality": "m:1"},
+    {"from": "Flight_Segment_POS.departureDate", "to": "Date Dim.Date_Key", "cardinality": "m:1"},
+    {"from": "Flight_OD_POS.departureDate", "to": "Date Dim.Date_Key", "cardinality": "m:1"},
+    {"from": "Flight_Segment_Capacity.route", "to": "Route_Dimension.airportCode", "cardinality": "m:1"},
+    {"from": "Flight_OD_Capacity.route", "to": "Route_Dimension.airportCode", "cardinality": "m:1"},
+    {"from": "Flight_Segment_Capacity.originAirport", "to": "Origin_Airport_Dimension.airportCode", "cardinality": "m:1"},
+    {"from": "Flight_OD_Capacity.originAirport", "to": "Origin_Airport_Dimension.airportCode", "cardinality": "m:1"},
+    {"from": "Flight_Segment_Capacity.cabinTypeCode", "to": "Cabin_Dimension.CabinTypeCode", "cardinality": "m:1"},
+    {"from": "Flight_OD_Capacity.cabinTypeCode", "to": "Cabin_Dimension.CabinTypeCode", "cardinality": "m:1"},
+    {"from": "Flight_Segment_POS.CountryKey", "to": "POS_Dimension.Country_Code", "cardinality": "m:1"},
+    {"from": "Flight_OD_POS.CountryKey", "to": "POS_Dimension.Country_Code", "cardinality": "m:1"},
+    {"from": "Flight_Segment_POS.RegionKey", "to": "POS_Region_Dimension.regionCode", "cardinality": "m:1"},
+    {"from": "Route_Dimension.region", "to": "Route_Region_Dimension.regionCode", "cardinality": "m:1"},
+    {"from": "Flight_Segment_POS.serviceId", "to": "Catalog_Services.id", "cardinality": "m:1"},
+    {"from": "Flight_Segment_POS.productId", "to": "Catalog_Products.id", "cardinality": "m:1"},
+    {"from": "Flight_Segment_POS.organizationId", "to": "Dim_Channels_Organization.organizationId", "cardinality": "m:1"},
+    {"from": "Flight_Segment_POS.partnership", "to": "Partnership_Dimension.partnership", "cardinality": "m:1"}
+  ],
+  "critical_filters": {
+    "isFlown": {
+      "type": "String",
+      "tables": ["Flight_Segment_Capacity", "Flight_OD_Capacity", "Flight_Segment_POS", "Flight_OD_POS"],
+      "values": {
+        "Flown": "Historical actuals (departed flights)",
+        "Forward": "Forward bookings (future flights)"
+      },
+      "notes": "Pre-built measures already split via Flown_ / Forward_ prefix. Apply this filter explicitly in custom DAX."
+    },
+    "paxType_exclusion": {
+      "column": "Flight_Segment_POS.paxType",
+      "rule": "Exclude 'INF' (infants) when counting revenue passengers.",
+      "example": "Flight_Segment_POS[paxType] <> \"INF\""
+    },
+    "ticket_only_filter": {
+      "rule": "Use Catalog_Services[serviceType] = \"Rtf\" to isolate ticket (ReadyToFly) revenue and exclude ancillary."
+    }
+  }
+}
+{
+  "model": {
+    "name": "Routes Insights - Flyr",
+    "workspace_id": "4435d932-4c62-46fd-ba3f-dd41a0d6d2f4",
     "dataset_id": "b047fe92-8b73-4f06-a2ae-e75b9b9363a0"
   },
   "tables": [
