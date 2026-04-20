@@ -1,4 +1,4 @@
-# RX-Commercial-Intelligence
+L# RX-Commercial-Intelligence
 
 AI agent embedded in Microsoft Teams that enables Riyadh Air's Cx Commercial Insights team to instantly query KPIs, automatically detect revenue anomalies, and identify root causes — eliminating manual dashboard analysis or analyst support.
 
@@ -103,51 +103,50 @@ rx-commercial-intelligence/
 
 ## Setup
 
+> **👉 For Cx users running locally without Teams/Bot, follow the
+> step-by-step [Local Development Guide](docs/local-dev.md).**
+
 ### Prerequisites
 - Python 3.11+
 - Azure subscription with AI Foundry project
-- Power BI service principal with Dataset.Read.All
-- Azure Bot registration + Teams channel
+- Power BI workspace + dataset access (`Member` + `Build`)
+- Azure Bot registration + Teams channel *(production only)*
 
-### Local Development
+### Local Development (quick start)
 
 ```bash
-# Clone and setup
 git clone https://github.com/nazmohammed/rx-commercial-intelligence.git
 cd rx-commercial-intelligence
 python -m venv .venv && .venv/Scripts/activate  # Windows
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
-# Configure
-cp .env.template .env
-# Fill in all values in .env
+az login                                          # DefaultAzureCredential
+cp .env.template .env                             # then fill in agent IDs
 
-# Create Foundry agents (one-time)
-# 1. Create RX-QueryEngine prompt agent in AI Foundry with system_prompt.md
-# 2. Register execute_dax_query as a function tool on the agent
-# 3. Create RX-Analyst prompt agent with system_prompt.md
-# 4. Copy agent IDs to .env
-
-# Run
-python -m src.app
-
-# Test with Bot Framework Emulator or Dev Tunnel → Teams
+python -m scripts.check_env                       # validate config
+python -m scripts.smoke_test_pbi                  # test PBI alone
+python -m scripts.smoke_test_foundry              # test Foundry alone
+python -m scripts.run_local "Your question here"  # full pipeline, no bot
 ```
+
+Full walkthrough: [docs/local-dev.md](docs/local-dev.md)
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `BOT_APP_ID` | Entra ID app registration for the bot |
-| `BOT_APP_PASSWORD` | Bot client secret |
-| `FOUNDRY_PROJECT_ENDPOINT` | AI Foundry project endpoint URL |
-| `FOUNDRY_QUERY_ENGINE_AGENT_ID` | Agent ID for RX-QueryEngine |
-| `FOUNDRY_ANALYST_AGENT_ID` | Agent ID for RX-Analyst |
-| `PBI_WORKSPACE_ID` | Power BI workspace (4435d932...) |
-| `PBI_DATASET_ID` | Power BI dataset (b047fe92...) |
-| `PBI_TENANT_ID` | Azure AD tenant for PBI service principal |
-| `PBI_CLIENT_ID` | Service principal app ID |
-| `PBI_CLIENT_SECRET` | Service principal secret |
+| Variable | Description | Required for |
+|----------|-------------|---|
+| `FOUNDRY_PROJECT_ENDPOINT` | AI Foundry project endpoint URL | Local + Prod |
+| `FOUNDRY_QUERY_ENGINE_AGENT_ID` | Agent ID for RX-QueryEngine | Local + Prod |
+| `FOUNDRY_ANALYST_AGENT_ID` | Agent ID for RX-Analyst | Local + Prod |
+| `PBI_WORKSPACE_ID` | Power BI workspace (`4435d932…`) | Local + Prod |
+| `PBI_DATASET_ID` | Power BI dataset (`b047fe92…`) | Local + Prod |
+| `TEST_USER_UPN` | UPN to impersonate for RLS | Local only |
+| `BOT_APP_ID` | Entra ID app registration for the bot | Prod (Teams) |
+| `BOT_APP_PASSWORD` | Bot client secret | Prod (Teams) |
+
+> PBI and Foundry auth use `DefaultAzureCredential`. Locally this is your
+> `az login` token; in production it's the Container App's managed identity.
+> RLS is enforced via the `impersonatedUser` parameter on the PBI executeQueries API.
 
 ## License
 
