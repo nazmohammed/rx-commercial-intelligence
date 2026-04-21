@@ -105,6 +105,9 @@ rx-commercial-intelligence/
 
 > **👉 For Cx users running locally without Teams/Bot, follow the
 > step-by-step [Local Development Guide](docs/local-dev.md).**
+>
+> **👉 For Teams + Azure Bot Service integration (production deployment),
+> follow the [Teams Integration Guide](docs/teams-integration.md).**
 
 ### Prerequisites
 - Python 3.11+
