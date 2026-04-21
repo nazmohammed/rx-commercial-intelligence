@@ -108,6 +108,10 @@ rx-commercial-intelligence/
 >
 > **👉 For Teams + Azure Bot Service integration (production deployment),
 > follow the [Teams Integration Guide](docs/teams-integration.md).**
+>
+> **👉 If Cx IT is provisioning the Bot + App Registration outside this repo,
+> see the [Cx IT Handoff Checklist](docs/cx-it-handoff.md) and
+> [Post-Provisioning Steps](docs/post-provisioning-steps.md).**
 
 ### Prerequisites
 - Python 3.11+
