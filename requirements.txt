@@ -4,8 +4,11 @@ botbuilder-integration-aiohttp==4.16.2
 aiohttp==3.10.5
 
 # Azure AI Foundry — invoke prompt agents via Responses API
-azure-ai-projects==1.0.0
-azure-ai-agents==1.0.0
+# NOTE: azure-ai-projects>=2.0.0 is required for the `agent_reference` extra_body
+# on openai_client.responses.create. Older 1.x routes Responses through the
+# legacy Azure OpenAI surface which rejects agent_reference with
+# "Unknown parameter: 'agent_reference'".
+azure-ai-projects>=2.0.0
 azure-identity==1.19.0
 openai>=1.78.0
 
