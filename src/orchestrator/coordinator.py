@@ -73,23 +73,24 @@ class Coordinator:
                 # -- Step 1: RX-QueryEngine (Prompt Agent -> DAX text) --
                 logger.info("invoking_query_engine", question=user_question[:100])
 
-                qe_thread = await client.agents.create_thread()
-                await client.agents.create_message(
+                qe_thread = await client.agents.threads.create()
+                await client.agents.messages.create(
                     thread_id=qe_thread.id,
                     role="user",
                     content=user_question,
                 )
 
-                qe_run = await client.agents.create_run(
+                qe_run = await client.agents.runs.create(
                     thread_id=qe_thread.id,
-                    assistant_id=self.query_engine_agent_id,
+                    agent_id=self.query_engine_agent_id,
                 )
                 qe_run = await self._poll_run(
                     client, qe_thread.id, qe_run.id, label="query_engine"
                 )
 
-                qe_messages = await client.agents.list_messages(thread_id=qe_thread.id)
-                qe_response = self._extract_last_assistant_message(qe_messages)
+                qe_response = await self._extract_last_assistant_message(
+                    client, qe_thread.id
+                )
 
                 logger.info(
                     "query_engine_complete",
@@ -102,7 +103,7 @@ class Coordinator:
                 if dax.strip().upper() == CANNOT_ANSWER_SENTINEL:
                     reason = self._extract_reason(qe_response)
                     logger.info("query_engine_cannot_answer", reason=reason)
-                    await client.agents.delete_thread(qe_thread.id)
+                    await client.agents.threads.delete(qe_thread.id)
                     message = (
                         reason
                         or "The Routes Insights - Flyr model does not contain the data needed to answer that question."
@@ -115,7 +116,7 @@ class Coordinator:
                         "query_engine_missing_dax_markers",
                         response=qe_response[:500],
                     )
-                    await client.agents.delete_thread(qe_thread.id)
+                    await client.agents.threads.delete(qe_thread.id)
                     card = build_error_card(
                         "QueryEngine did not return DAX between the expected === DAX START === / === DAX END === markers."
                     )
@@ -135,23 +136,24 @@ class Coordinator:
                     f"Raw result (JSON):\n{json.dumps(pbi_result, default=str)}"
                 )
 
-                analyst_thread = await client.agents.create_thread()
-                await client.agents.create_message(
+                analyst_thread = await client.agents.threads.create()
+                await client.agents.messages.create(
                     thread_id=analyst_thread.id,
                     role="user",
                     content=analyst_prompt,
                 )
 
-                analyst_run = await client.agents.create_run(
+                analyst_run = await client.agents.runs.create(
                     thread_id=analyst_thread.id,
-                    assistant_id=self.analyst_agent_id,
+                    agent_id=self.analyst_agent_id,
                 )
                 analyst_run = await self._poll_run(
                     client, analyst_thread.id, analyst_run.id, label="analyst"
                 )
 
-                analyst_messages = await client.agents.list_messages(thread_id=analyst_thread.id)
-                analyst_response = self._extract_last_assistant_message(analyst_messages)
+                analyst_response = await self._extract_last_assistant_message(
+                    client, analyst_thread.id
+                )
 
                 logger.info(
                     "analyst_complete",
@@ -171,8 +173,8 @@ class Coordinator:
                 )
 
                 # Cleanup threads
-                await client.agents.delete_thread(qe_thread.id)
-                await client.agents.delete_thread(analyst_thread.id)
+                await client.agents.threads.delete(qe_thread.id)
+                await client.agents.threads.delete(analyst_thread.id)
 
                 return {
                     "card": card,
@@ -191,7 +193,7 @@ class Coordinator:
         fast — it means the agent was misconfigured as a Hosted Agent.
         """
         while True:
-            run = await client.agents.get_run(thread_id=thread_id, run_id=run_id)
+            run = await client.agents.runs.get(thread_id=thread_id, run_id=run_id)
 
             if run.status == "completed":
                 return run
@@ -206,12 +208,15 @@ class Coordinator:
 
             await asyncio.sleep(1)
 
-    def _extract_last_assistant_message(self, messages) -> str:
-        """Extract the text content of the last assistant message."""
-        for msg in reversed(messages.data):
+    async def _extract_last_assistant_message(self, client, thread_id: str) -> str:
+        """Fetch the last assistant message on the thread and return its text."""
+        collected = []
+        async for msg in client.agents.messages.list(thread_id=thread_id):
+            collected.append(msg)
+        for msg in reversed(collected):
             if msg.role == "assistant":
                 for block in msg.content:
-                    if hasattr(block, "text"):
+                    if hasattr(block, "text") and block.text is not None:
                         return block.text.value
         return ""
 
