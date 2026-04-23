@@ -1,10 +1,11 @@
 # RX-Coordinator — M365 Agents SDK + Bot Framework
 botbuilder-core==4.16.2
 botbuilder-integration-aiohttp==4.16.2
-aiohttp==3.9.5
+aiohttp==3.10.5
 
 # Azure AI Foundry — invoke prompt agents
-azure-ai-projects==1.0.0b7
+azure-ai-projects==1.0.0
+azure-ai-agents==1.0.0
 azure-identity==1.19.0
 
 # Power BI REST API — DAX execution (auth via azure-identity above)
