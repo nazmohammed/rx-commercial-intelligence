@@ -115,8 +115,9 @@ Before `run_local` works, the two agents must exist in the portal:
 - Model: `gpt-5.4-mini`
 - Instructions: paste the full contents of
   `src/agents/query_engine/system_prompt.md`
-- Tools → Add function tool → paste `EXECUTE_DAX_TOOL_DEFINITION` schema
-  from `src/tools/pbi_execute_query.py`
+- **No tools.** Prompt Agents don't support function tools — the Coordinator
+  extracts DAX from the `=== DAX START === / === DAX END ===` markers in the
+  agent's response and executes it directly.
 - Save → copy **Agent ID** → `FOUNDRY_QUERY_ENGINE_AGENT_ID`
 
 ### RX-Analyst (Prompt Agent)
@@ -135,4 +136,5 @@ Before `run_local` works, the two agents must exist in the portal:
 | `Agent not found` | Wrong `FOUNDRY_*_AGENT_ID` in `.env` |
 | `ModuleNotFoundError: azure` | venv not activated |
 | PowerShell execution policy error | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
-| Run stuck on `requires_action` | Tool name mismatch — portal function tool must be `execute_dax_query` (case-sensitive) |
+| Run stuck on `requires_action` | Agent is mis-provisioned as a Hosted Agent with tools. Re-create it as a Prompt Agent with no tools — the Coordinator fails fast if a run enters `requires_action`. |
+| `QueryEngine did not return DAX between the expected === DAX START ===` | Agent instructions are stale — re-paste `src/agents/query_engine/system_prompt.md` and ensure the Output Contract section is present. |
