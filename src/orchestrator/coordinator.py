@@ -71,86 +71,86 @@ class Coordinator:
                 endpoint=self.project_endpoint,
                 credential=credential,
             ) as project_client:
-                async with project_client.get_openai_client() as openai_client:
-                    # -- Step 1: RX-QueryEngine (Prompt Agent -> DAX text) --
-                    logger.info("invoking_query_engine", question=user_question[:100])
+                openai_client = await project_client.get_openai_client()
+                # -- Step 1: RX-QueryEngine (Prompt Agent -> DAX text) --
+                logger.info("invoking_query_engine", question=user_question[:100])
 
-                    qe_resp = await openai_client.responses.create(
-                        input=user_question,
-                        extra_body=_agent_reference(self.query_engine_agent_name),
+                qe_resp = await openai_client.responses.create(
+                    input=user_question,
+                    extra_body=_agent_reference(self.query_engine_agent_name),
+                )
+                qe_response = qe_resp.output_text or ""
+
+                logger.info(
+                    "query_engine_complete",
+                    response_length=len(qe_response),
+                )
+
+                # -- Step 2: Parse + execute DAX --
+                dax = self._extract_dax_from_markers(qe_response)
+
+                if dax.strip().upper() == CANNOT_ANSWER_SENTINEL:
+                    reason = self._extract_reason(qe_response)
+                    logger.info("query_engine_cannot_answer", reason=reason)
+                    message = (
+                        reason
+                        or "The Routes Insights - Flyr model does not contain the data needed to answer that question."
                     )
-                    qe_response = qe_resp.output_text or ""
+                    card = build_error_card(message)
+                    return {"card": card, "dax": "", "summary": reason or ""}
 
-                    logger.info(
-                        "query_engine_complete",
-                        response_length=len(qe_response),
+                if not dax:
+                    logger.error(
+                        "query_engine_missing_dax_markers",
+                        response=qe_response[:500],
                     )
-
-                    # -- Step 2: Parse + execute DAX --
-                    dax = self._extract_dax_from_markers(qe_response)
-
-                    if dax.strip().upper() == CANNOT_ANSWER_SENTINEL:
-                        reason = self._extract_reason(qe_response)
-                        logger.info("query_engine_cannot_answer", reason=reason)
-                        message = (
-                            reason
-                            or "The Routes Insights - Flyr model does not contain the data needed to answer that question."
-                        )
-                        card = build_error_card(message)
-                        return {"card": card, "dax": "", "summary": reason or ""}
-
-                    if not dax:
-                        logger.error(
-                            "query_engine_missing_dax_markers",
-                            response=qe_response[:500],
-                        )
-                        card = build_error_card(
-                            "QueryEngine did not return DAX between the expected === DAX START === / === DAX END === markers."
-                        )
-                        return {"card": card, "dax": "", "summary": ""}
-
-                    logger.info("executing_dax", dax=dax[:200])
-                    pbi_result = await execute_dax_query(
-                        dax, user_principal_name=user_principal_name
+                    card = build_error_card(
+                        "QueryEngine did not return DAX between the expected === DAX START === / === DAX END === markers."
                     )
+                    return {"card": card, "dax": "", "summary": ""}
 
-                    # -- Step 3: RX-Analyst (Prompt Agent -> commercial interpretation) --
-                    logger.info("invoking_analyst")
+                logger.info("executing_dax", dax=dax[:200])
+                pbi_result = await execute_dax_query(
+                    dax, user_principal_name=user_principal_name
+                )
 
-                    analyst_prompt = (
-                        f"Original question: {user_question}\n\n"
-                        f"DAX executed:\n```dax\n{dax}\n```\n\n"
-                        f"Raw result (JSON):\n{json.dumps(pbi_result, default=str)}"
-                    )
+                # -- Step 3: RX-Analyst (Prompt Agent -> commercial interpretation) --
+                logger.info("invoking_analyst")
 
-                    analyst_resp = await openai_client.responses.create(
-                        input=analyst_prompt,
-                        extra_body=_agent_reference(self.analyst_agent_name),
-                    )
-                    analyst_response = analyst_resp.output_text or ""
+                analyst_prompt = (
+                    f"Original question: {user_question}\n\n"
+                    f"DAX executed:\n```dax\n{dax}\n```\n\n"
+                    f"Raw result (JSON):\n{json.dumps(pbi_result, default=str)}"
+                )
 
-                    logger.info(
-                        "analyst_complete",
-                        response_length=len(analyst_response),
-                    )
+                analyst_resp = await openai_client.responses.create(
+                    input=analyst_prompt,
+                    extra_body=_agent_reference(self.analyst_agent_name),
+                )
+                analyst_response = analyst_resp.output_text or ""
 
-                    # -- Step 4: Format -> Adaptive Card --
-                    parsed = parse_analyst_response(analyst_response)
+                logger.info(
+                    "analyst_complete",
+                    response_length=len(analyst_response),
+                )
 
-                    card = build_insight_card(
-                        question=user_question,
-                        summary=parsed["summary"],
-                        findings=parsed["findings"],
-                        flags=parsed.get("flags"),
-                        recommendation=parsed.get("recommendation"),
-                        dax=dax,
-                    )
+                # -- Step 4: Format -> Adaptive Card --
+                parsed = parse_analyst_response(analyst_response)
 
-                    return {
-                        "card": card,
-                        "dax": dax,
-                        "summary": parsed["summary"],
-                    }
+                card = build_insight_card(
+                    question=user_question,
+                    summary=parsed["summary"],
+                    findings=parsed["findings"],
+                    flags=parsed.get("flags"),
+                    recommendation=parsed.get("recommendation"),
+                    dax=dax,
+                )
+
+                return {
+                    "card": card,
+                    "dax": dax,
+                    "summary": parsed["summary"],
+                }
 
         finally:
             await credential.close()
