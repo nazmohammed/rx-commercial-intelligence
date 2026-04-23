@@ -42,7 +42,7 @@ async def main() -> int:
             else:
                 print(f"Resolving agent name '{agent_ref}' -> asst_* ID...")
                 agent_id = None
-                async for agent in client.agents.list():
+                async for agent in client.agents.list_agents():
                     if agent.name == agent_ref:
                         agent_id = agent.id
                         print(f"Resolved to: {agent_id}")

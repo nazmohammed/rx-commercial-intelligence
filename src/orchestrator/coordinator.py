@@ -63,7 +63,7 @@ class Coordinator:
             return ref
         if ref in self._resolved_ids:
             return self._resolved_ids[ref]
-        async for agent in client.agents.list():
+        async for agent in client.agents.list_agents():
             if agent.name == ref:
                 self._resolved_ids[ref] = agent.id
                 logger.info("resolved_agent_name", name=ref, agent_id=agent.id)
