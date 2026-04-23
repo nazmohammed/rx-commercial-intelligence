@@ -47,8 +47,31 @@ class Coordinator:
 
     def __init__(self) -> None:
         self.project_endpoint = os.environ["FOUNDRY_PROJECT_ENDPOINT"]
-        self.query_engine_agent_id = os.environ["FOUNDRY_QUERY_ENGINE_AGENT_ID"]
-        self.analyst_agent_id = os.environ["FOUNDRY_ANALYST_AGENT_ID"]
+        self.query_engine_agent_ref = os.environ["FOUNDRY_QUERY_ENGINE_AGENT_ID"]
+        self.analyst_agent_ref = os.environ["FOUNDRY_ANALYST_AGENT_ID"]
+        # Resolved asst_* IDs are cached after first lookup.
+        self._resolved_ids: dict[str, str] = {}
+
+    async def _resolve_agent_id(self, client, ref: str) -> str:
+        """Resolve a reference (either `asst_*` ID or display name) to an asst_* ID.
+
+        The Foundry SDK requires `assistant_id` to begin with `asst`. The portal
+        exposes agents by display name (e.g., `RX-Analyst`), so we look them up
+        via `list_agents()` when the env var is a name rather than an ID.
+        """
+        if ref.startswith("asst"):
+            return ref
+        if ref in self._resolved_ids:
+            return self._resolved_ids[ref]
+        async for agent in client.agents.list():
+            if agent.name == ref:
+                self._resolved_ids[ref] = agent.id
+                logger.info("resolved_agent_name", name=ref, agent_id=agent.id)
+                return agent.id
+        raise RuntimeError(
+            f"Could not find Foundry agent with name '{ref}'. "
+            f"Check the display name in the portal or set the env var to the asst_* ID."
+        )
 
     async def process(
         self,
@@ -80,9 +103,12 @@ class Coordinator:
                     content=user_question,
                 )
 
+                qe_agent_id = await self._resolve_agent_id(
+                    client, self.query_engine_agent_ref
+                )
                 qe_run = await client.agents.runs.create(
                     thread_id=qe_thread.id,
-                    agent_id=self.query_engine_agent_id,
+                    agent_id=qe_agent_id,
                 )
                 qe_run = await self._poll_run(
                     client, qe_thread.id, qe_run.id, label="query_engine"
@@ -143,9 +169,12 @@ class Coordinator:
                     content=analyst_prompt,
                 )
 
+                analyst_agent_id = await self._resolve_agent_id(
+                    client, self.analyst_agent_ref
+                )
                 analyst_run = await client.agents.runs.create(
                     thread_id=analyst_thread.id,
-                    agent_id=self.analyst_agent_id,
+                    agent_id=analyst_agent_id,
                 )
                 analyst_run = await self._poll_run(
                     client, analyst_thread.id, analyst_run.id, label="analyst"
