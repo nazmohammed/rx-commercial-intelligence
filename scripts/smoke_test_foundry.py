@@ -37,24 +37,24 @@ async def main() -> int:
     credential = DefaultAzureCredential()
     try:
         async with AIProjectClient(endpoint=endpoint, credential=credential) as project_client:
-            openai_client = await project_client.get_openai_client()
-            print("Invoking agent via Responses API...")
-            resp = await openai_client.responses.create(
-                input="Reply with exactly: 'smoke test ok'",
-                extra_body={
-                    "agent_reference": {
-                        "name": agent_name,
-                        "type": "agent_reference",
-                    }
-                },
-            )
-            text = resp.output_text or ""
-            if text:
-                print(f"\nAgent replied: {text}")
-                return 0
-            print("Agent returned no text output")
-            print(f"Full response: {resp}")
-            return 1
+            async with project_client.get_openai_client() as openai_client:
+                print("Invoking agent via Responses API...")
+                resp = await openai_client.responses.create(
+                    input="Reply with exactly: 'smoke test ok'",
+                    extra_body={
+                        "agent_reference": {
+                            "name": agent_name,
+                            "type": "agent_reference",
+                        }
+                    },
+                )
+                text = resp.output_text or ""
+                if text:
+                    print(f"\nAgent replied: {text}")
+                    return 0
+                print("Agent returned no text output")
+                print(f"Full response: {resp}")
+                return 1
     finally:
         await credential.close()
 
