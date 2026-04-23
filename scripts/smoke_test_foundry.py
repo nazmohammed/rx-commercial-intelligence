@@ -24,14 +24,16 @@ async def main() -> int:
 
     endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT")
     agent_name = os.getenv("FOUNDRY_ANALYST_AGENT_ID")
+    model = os.getenv("FOUNDRY_MODEL")
 
-    if not endpoint or not agent_name:
-        print("FOUNDRY_PROJECT_ENDPOINT or FOUNDRY_ANALYST_AGENT_ID not set")
+    if not endpoint or not agent_name or not model:
+        print("FOUNDRY_PROJECT_ENDPOINT, FOUNDRY_ANALYST_AGENT_ID, or FOUNDRY_MODEL not set")
         return 1
 
     print("-- Foundry smoke test --")
     print(f"Endpoint:   {endpoint}")
     print(f"Agent name: {agent_name}")
+    print(f"Model:      {model}")
     print()
 
     credential = DefaultAzureCredential()
@@ -42,6 +44,7 @@ async def main() -> int:
             )
             print("Invoking agent via Responses API...")
             resp = await openai_client.responses.create(
+                model=model,
                 input="Reply with exactly: 'smoke test ok'",
                 extra_body={
                     "agent_reference": {

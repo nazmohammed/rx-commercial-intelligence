@@ -56,6 +56,8 @@ class Coordinator:
         # Display names of the Foundry Prompt Agents (e.g. "RX-QueryEngine", "RX-Analyst")
         self.query_engine_agent_name = os.environ["FOUNDRY_QUERY_ENGINE_AGENT_ID"]
         self.analyst_agent_name = os.environ["FOUNDRY_ANALYST_AGENT_ID"]
+        # Azure OpenAI deployment name backing the Prompt Agents (e.g. "gpt-4.1", "gpt-5.4-mini")
+        self.model_deployment = os.environ["FOUNDRY_MODEL"]
 
     async def process(
         self,
