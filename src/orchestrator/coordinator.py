@@ -71,7 +71,9 @@ class Coordinator:
                 endpoint=self.project_endpoint,
                 credential=credential,
             ) as project_client:
-                openai_client = await project_client.get_openai_client()
+                openai_client = await project_client.get_openai_client(
+                    api_version="2025-04-01-preview"
+                )
                 # -- Step 1: RX-QueryEngine (Prompt Agent -> DAX text) --
                 logger.info("invoking_query_engine", question=user_question[:100])
 

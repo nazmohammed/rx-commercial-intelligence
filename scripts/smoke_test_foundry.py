@@ -37,7 +37,9 @@ async def main() -> int:
     credential = DefaultAzureCredential()
     try:
         async with AIProjectClient(endpoint=endpoint, credential=credential) as project_client:
-            openai_client = await project_client.get_openai_client()
+            openai_client = await project_client.get_openai_client(
+                api_version="2025-04-01-preview"
+            )
             print("Invoking agent via Responses API...")
             resp = await openai_client.responses.create(
                 input="Reply with exactly: 'smoke test ok'",
