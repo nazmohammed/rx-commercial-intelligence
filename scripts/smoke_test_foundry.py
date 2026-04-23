@@ -37,36 +37,38 @@ async def main() -> int:
     try:
         async with AIProjectClient(endpoint=endpoint, credential=credential) as client:
             print("Creating thread...")
-            thread = await client.agents.create_thread()
+            thread = await client.agents.threads.create()
 
             print("Sending test message...")
-            await client.agents.create_message(
+            await client.agents.messages.create(
                 thread_id=thread.id,
                 role="user",
                 content="Reply with exactly: 'smoke test ok'",
             )
 
             print("Running agent...")
-            run = await client.agents.create_run(
-                thread_id=thread.id, assistant_id=agent_id
+            run = await client.agents.runs.create(
+                thread_id=thread.id, agent_id=agent_id
             )
 
             while run.status not in ("completed", "failed", "cancelled"):
                 await asyncio.sleep(1)
-                run = await client.agents.get_run(thread_id=thread.id, run_id=run.id)
+                run = await client.agents.runs.get(thread_id=thread.id, run_id=run.id)
 
             if run.status != "completed":
                 err = run.last_error.message if run.last_error else "unknown"
                 print(f"❌ Run status: {run.status} — {err}")
                 return 1
 
-            messages = await client.agents.list_messages(thread_id=thread.id)
-            for msg in reversed(messages.data):
+            collected = []
+            async for msg in client.agents.messages.list(thread_id=thread.id):
+                collected.append(msg)
+            for msg in reversed(collected):
                 if msg.role == "assistant":
                     for block in msg.content:
-                        if hasattr(block, "text"):
+                        if hasattr(block, "text") and block.text is not None:
                             print(f"\n✅ Agent replied: {block.text.value}")
-                            await client.agents.delete_thread(thread.id)
+                            await client.agents.threads.delete(thread.id)
                             return 0
 
             print("❌ No assistant message found")
