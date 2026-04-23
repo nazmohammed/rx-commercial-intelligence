@@ -1,7 +1,8 @@
 """Execute DAX queries against Power BI REST API.
 
-This is the function-tool that RX-QueryEngine (Foundry prompt agent)
-calls to run generated DAX against the Routes Insights semantic model.
+Called directly by the RX-Coordinator after it extracts DAX from the
+RX-QueryEngine prompt agent's marker-delimited response. RLS is enforced
+via the ``impersonatedUser`` API parameter when a Teams user's UPN is known.
 """
 
 import json
@@ -129,7 +130,16 @@ async def execute_dax_query(
         }
 
 
-# ── Function-tool schema for Foundry agent registration ──
+# -- Function-tool schema (LEGACY / RESERVED) --
+#
+# Foundry **Prompt Agents** do not support function tools. RX-QueryEngine is a
+# Prompt Agent, so this definition is not currently used: the Coordinator
+# extracts DAX from the agent's marker-delimited text response and calls
+# ``execute_dax_query`` directly.
+#
+# This schema is kept for a potential future migration to a **Hosted Agent**,
+# where function-tool calling *is* supported. Do not register it against any
+# Prompt Agent — the run will fail.
 EXECUTE_DAX_TOOL_DEFINITION = {
     "type": "function",
     "function": {
