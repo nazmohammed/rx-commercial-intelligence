@@ -22,20 +22,35 @@ async def main() -> int:
     load_dotenv()
 
     endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT")
-    agent_id = os.getenv("FOUNDRY_ANALYST_AGENT_ID")
+    agent_ref = os.getenv("FOUNDRY_ANALYST_AGENT_ID")
 
-    if not endpoint or not agent_id:
+    if not endpoint or not agent_ref:
         print("❌ FOUNDRY_PROJECT_ENDPOINT or FOUNDRY_ANALYST_AGENT_ID not set")
         return 1
 
     print("── Foundry smoke test ──")
     print(f"Endpoint: {endpoint}")
-    print(f"Agent ID: {agent_id}")
+    print(f"Agent ref: {agent_ref}")
     print()
 
     credential = DefaultAzureCredential()
     try:
         async with AIProjectClient(endpoint=endpoint, credential=credential) as client:
+            # Resolve display name -> asst_* ID if needed
+            if agent_ref.startswith("asst"):
+                agent_id = agent_ref
+            else:
+                print(f"Resolving agent name '{agent_ref}' -> asst_* ID...")
+                agent_id = None
+                async for agent in client.agents.list():
+                    if agent.name == agent_ref:
+                        agent_id = agent.id
+                        print(f"Resolved to: {agent_id}")
+                        break
+                if agent_id is None:
+                    print(f"❌ No agent found with name '{agent_ref}'")
+                    return 1
+
             print("Creating thread...")
             thread = await client.agents.threads.create()
 
