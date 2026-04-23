@@ -11,24 +11,28 @@ AI agent embedded in Microsoft Teams that enables Riyadh Air's Cx Commercial Ins
 └──────────────┘     │                                                   │
                      │  1. Receive question                              │
                      │  2. Invoke RX-QueryEngine (Foundry Prompt Agent)  │
-                     │  3. Handle execute_dax_query tool call locally    │
-                     │  4. Invoke RX-Analyst (Foundry Prompt Agent)      │
-                     │  5. Format → Adaptive Card → Teams               │
+                     │  3. Extract DAX from === DAX START/END === markers│
+                     │  4. Execute DAX against Power BI REST API         │
+                     │  5. Invoke RX-Analyst with question + DAX + data  │
+                     │  6. Format → Adaptive Card → Teams                │
                      └──────────┬────────────────────────┬───────────────┘
                                 │                        │
                      ┌──────────▼──────────┐  ┌─────────▼──────────┐
                      │  RX-QueryEngine     │  │  RX-Analyst        │
                      │  Foundry Prompt     │  │  Foundry Prompt    │
-                     │  Agent              │  │  Agent             │
-                     │  gpt-5.4-mini       │  │  gpt-5.4-mini     │
+                     │  Agent (no tools)   │  │  Agent (no tools)  │
+                     │  gpt-5.4-mini       │  │  gpt-5.4-mini      │
                      │                     │  │                    │
-                     │  Generates DAX from │  │  Validates data,   │
-                     │  natural language   │  │  interprets in     │
-                     │  Calls tool →       │  │  commercial        │
-                     │  execute_dax_query  │  │  context, flags    │
-                     └─────────┬───────────┘  │  anomalies         │
-                               │              └────────────────────┘
-                     ┌─────────▼───────────┐
+                     │  Returns DAX text   │  │  Validates data,   │
+                     │  between markers:   │  │  interprets in     │
+                     │  === DAX START ===  │  │  commercial        │
+                     │  EVALUATE ...       │  │  context, flags    │
+                     │  === DAX END ===    │  │  anomalies         │
+                     └─────────────────────┘  └────────────────────┘
+                                │
+                                │ (Coordinator executes the DAX)
+                                ▼
+                     ┌──────────────────────┐
                      │  Power BI REST API   │
                      │  executeQueries      │
                      │                      │
