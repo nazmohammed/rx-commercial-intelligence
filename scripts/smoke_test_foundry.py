@@ -1,7 +1,8 @@
-"""Smoke test: verify Foundry connection + agent invocation.
+"""Smoke test: verify Foundry Prompt Agent invocation via Responses API.
 
-Sends a trivial "hello" message to the Analyst agent (no tools) to validate
-Foundry auth + agent ID config. Does NOT hit PBI.
+Invokes the Analyst Prompt Agent by its display name (e.g. "RX-Analyst") via
+the OpenAI Responses API using `agent_reference`. This is the correct path
+for agents created in the new Foundry portal experience.
 
 Usage:
     python -m scripts.smoke_test_foundry
@@ -22,72 +23,38 @@ async def main() -> int:
     load_dotenv()
 
     endpoint = os.getenv("FOUNDRY_PROJECT_ENDPOINT")
-    agent_ref = os.getenv("FOUNDRY_ANALYST_AGENT_ID")
+    agent_name = os.getenv("FOUNDRY_ANALYST_AGENT_ID")
 
-    if not endpoint or not agent_ref:
-        print("❌ FOUNDRY_PROJECT_ENDPOINT or FOUNDRY_ANALYST_AGENT_ID not set")
+    if not endpoint or not agent_name:
+        print("FOUNDRY_PROJECT_ENDPOINT or FOUNDRY_ANALYST_AGENT_ID not set")
         return 1
 
-    print("── Foundry smoke test ──")
-    print(f"Endpoint: {endpoint}")
-    print(f"Agent ref: {agent_ref}")
+    print("-- Foundry smoke test --")
+    print(f"Endpoint:   {endpoint}")
+    print(f"Agent name: {agent_name}")
     print()
 
     credential = DefaultAzureCredential()
     try:
-        async with AIProjectClient(endpoint=endpoint, credential=credential) as client:
-            # Resolve display name -> asst_* ID if needed
-            if agent_ref.startswith("asst"):
-                agent_id = agent_ref
-            else:
-                print(f"Resolving agent name '{agent_ref}' -> asst_* ID...")
-                agent_id = None
-                async for agent in client.agents.list_agents():
-                    if agent.name == agent_ref:
-                        agent_id = agent.id
-                        print(f"Resolved to: {agent_id}")
-                        break
-                if agent_id is None:
-                    print(f"❌ No agent found with name '{agent_ref}'")
-                    return 1
-
-            print("Creating thread...")
-            thread = await client.agents.threads.create()
-
-            print("Sending test message...")
-            await client.agents.messages.create(
-                thread_id=thread.id,
-                role="user",
-                content="Reply with exactly: 'smoke test ok'",
-            )
-
-            print("Running agent...")
-            run = await client.agents.runs.create(
-                thread_id=thread.id, agent_id=agent_id
-            )
-
-            while run.status not in ("completed", "failed", "cancelled"):
-                await asyncio.sleep(1)
-                run = await client.agents.runs.get(thread_id=thread.id, run_id=run.id)
-
-            if run.status != "completed":
-                err = run.last_error.message if run.last_error else "unknown"
-                print(f"❌ Run status: {run.status} — {err}")
+        async with AIProjectClient(endpoint=endpoint, credential=credential) as project_client:
+            async with project_client.get_openai_client() as openai_client:
+                print("Invoking agent via Responses API...")
+                resp = await openai_client.responses.create(
+                    input="Reply with exactly: 'smoke test ok'",
+                    extra_body={
+                        "agent_reference": {
+                            "name": agent_name,
+                            "type": "agent_reference",
+                        }
+                    },
+                )
+                text = resp.output_text or ""
+                if text:
+                    print(f"\nAgent replied: {text}")
+                    return 0
+                print("Agent returned no text output")
+                print(f"Full response: {resp}")
                 return 1
-
-            collected = []
-            async for msg in client.agents.messages.list(thread_id=thread.id):
-                collected.append(msg)
-            for msg in reversed(collected):
-                if msg.role == "assistant":
-                    for block in msg.content:
-                        if hasattr(block, "text") and block.text is not None:
-                            print(f"\n✅ Agent replied: {block.text.value}")
-                            await client.agents.threads.delete(thread.id)
-                            return 0
-
-            print("❌ No assistant message found")
-            return 1
     finally:
         await credential.close()
 
