@@ -43,20 +43,21 @@ AI agent embedded in Microsoft Teams that enables Riyadh Air's Cx Commercial Ins
 
 | Agent | Type | Model | Purpose |
 |-------|------|-------|---------|
-| **RX-Coordinator** | Code (Container Apps) | None (deterministic) | Routes Teams → Foundry agents, handles tool calls, formats Adaptive Cards |
-| **RX-QueryEngine** | Foundry Prompt Agent | gpt-5.4-mini | Generates DAX from natural language, calls `execute_dax_query` tool |
+| **RX-Coordinator** | Code (Container Apps) | None (deterministic) | Routes Teams → Foundry agents, extracts DAX from markers, executes against PBI, formats Adaptive Cards |
+| **RX-QueryEngine** | Foundry Prompt Agent | gpt-5.4-mini | Generates DAX from natural language and returns it between `=== DAX START === / === DAX END ===` markers |
 | **RX-Analyst** | Foundry Prompt Agent | gpt-5.4-mini | Validates results, interprets with domain knowledge, flags anomalies |
+
+Both Foundry agents are **pure Prompt Agents** — no function tools. The Coordinator performs all deterministic work (DAX parsing + PBI execution + RLS).
 
 ## Data Flow
 
 1. User asks in Teams: *"What's the load factor on RUH-LHR for Q1?"*
 2. **RX-Coordinator** receives activity, sends question to **RX-QueryEngine**
-3. **RX-QueryEngine** generates DAX, calls `execute_dax_query` tool
-4. **RX-Coordinator** executes the DAX against PBI REST API, returns result to agent
-5. **RX-QueryEngine** returns DAX + raw data
-6. **RX-Coordinator** sends DAX + data + original question to **RX-Analyst**
-7. **RX-Analyst** validates, interprets (e.g., "87% — 12 pts above network avg"), flags issues
-8. **RX-Coordinator** parses response into Adaptive Card → Teams
+3. **RX-QueryEngine** generates DAX and returns it between `=== DAX START === / === DAX END ===` markers
+4. **RX-Coordinator** parses the markers and executes the DAX against the PBI REST API (`impersonatedUser` for RLS)
+5. **RX-Coordinator** sends the original question + DAX + raw JSON result to **RX-Analyst**
+6. **RX-Analyst** validates, interprets (e.g., "87% — 12 pts above network avg"), flags issues
+7. **RX-Coordinator** parses response into Adaptive Card → Teams
 
 ## Project Structure
 
@@ -70,7 +71,7 @@ rx-commercial-intelligence/
 │   │   ├── adaptive_cards.py       # Card templates
 │   │   └── turn_state.py           # Conversation state
 │   ├── orchestrator/
-│   │   ├── coordinator.py          # Routes → Foundry agents, handles tool calls
+│   │   ├── coordinator.py          # Routes → Foundry agents, extracts + executes DAX
 │   │   └── response_formatter.py   # Analyst markdown → Adaptive Card
 │   ├── agents/
 │   │   ├── query_engine/
