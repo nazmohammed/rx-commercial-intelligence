@@ -3,10 +3,11 @@ botbuilder-core==4.16.2
 botbuilder-integration-aiohttp==4.16.2
 aiohttp==3.10.5
 
-# Azure AI Foundry — invoke prompt agents
+# Azure AI Foundry — invoke prompt agents via Responses API
 azure-ai-projects==1.0.0
 azure-ai-agents==1.0.0
 azure-identity==1.19.0
+openai==1.54.4
 
 # Power BI REST API — DAX execution (auth via azure-identity above)
 httpx==0.27.0
