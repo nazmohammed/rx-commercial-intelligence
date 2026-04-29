@@ -173,3 +173,76 @@ Deploy the RX Commercial Intelligence Teams bot with **zero direct public exposu
 | 4.3.5 | Send a real query: "what is the load factor of RUH-LHR October 2025" | Adaptive Card with summary, findings, DAX |
 
 **Deliverable:** Screenshots of all 4.x.x checks passing; sign-off from RX security.
+
+---
+
+## Phase 5 — Production Rollout
+
+### Task 5.1 — Observability
+
+| Step | Detail | Reference |
+|------|--------|-----------|
+| 5.1.1 | Enable Application Insights on bot pod | [App Insights for containers](https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-enable) |
+| 5.1.2 | Enable App Gateway diagnostic logs → Log Analytics | [App Gateway diagnostics](https://learn.microsoft.com/en-us/azure/application-gateway/application-gateway-diagnostics) |
+| 5.1.3 | Enable Bot Service Application Insights integration | [Bot Service Analytics](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-manage-analytics) |
+| 5.1.4 | Configure Azure Monitor alerts: backend health, 5xx rate, NSG denied flows | [Azure Monitor alerts](https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview) |
+
+### Task 5.2 — Teams app publishing
+
+| Step | Detail | Reference |
+|------|--------|-----------|
+| 5.2.1 | Submit Teams app manifest to Riyadh Air tenant app catalog | [Publish to org app store](https://learn.microsoft.com/en-us/microsoftteams/platform/concepts/deploy-and-publish/overview) |
+| 5.2.2 | Configure setup policy to pin the app for target user group | [Teams app setup policies](https://learn.microsoft.com/en-us/microsoftteams/teams-app-setup-policies) |
+| 5.2.3 | Communicate launch to end users | n/a |
+
+### Task 5.3 — Operational runbook
+
+| Step | Detail |
+|------|--------|
+| 5.3.1 | Document recovery procedures (cert renewal, backend pool changes, service tag updates) |
+| 5.3.2 | Hand off to RX IT operations team |
+| 5.3.3 | Schedule quarterly review of `AzureBotService` service tag changes |
+
+---
+
+## Roles & Hand-offs
+
+| Phase | Primary Owner | Supporting |
+|-------|--------------|------------|
+| 0 — Prereqs | RX IT Platform | Cx Dev |
+| 1 — Inbound (App Gateway + NSG) | RX IT Networking | RX Security |
+| 2 — Outbound (Palo Alto + UDR) | RX Network / PAN admin | RX Security |
+| 3 — Bot Service config | Cx Dev | RX IT Platform |
+| 4 — Validation | Cx Dev + RX IT | RX Security signs off |
+| 5 — Production rollout | RX IT Operations | Cx Dev consults |
+
+---
+
+## Key Microsoft References
+
+- [Bot Framework Security & Privacy FAQ](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-resources-faq-security)
+- [Configure network isolation for bots](https://learn.microsoft.com/en-us/azure/bot-service/dl-network-isolation-how-to)
+- [Connect a bot to Teams channel](https://learn.microsoft.com/en-us/azure/bot-service/channel-connect-teams)
+- [AKS — Limit egress traffic](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic)
+- [AKS — User-defined routing outbound type](https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype)
+- [App Gateway WAF v2 overview](https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/ag-overview)
+- [Service tags reference](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview)
+- [Teams app manifest schema](https://learn.microsoft.com/en-us/microsoftteams/platform/resources/schema/manifest-schema)
+
+---
+
+## Security Review Talking Points (for RX CISO sign-off)
+
+1. **AKS remains fully private** — no public IP, internal LB, private API server.
+2. **Single public ingress point** — Application Gateway, restricted via NSG to Microsoft's `AzureBotService` service tag. Internet access returns HTTP 403.
+3. **All outbound inspected** — Palo Alto NGFW enforces FQDN allow-list. Default-deny for AKS source.
+4. **No private-endpoint bypass, no Direct Line ASE workaround** — Microsoft-supported architecture for Teams bots in regulated environments.
+5. **Full auditability** — NSG flow logs, App Gateway access logs, PAN traffic logs, Bot Service Application Insights, AKS audit logs — all forwarded to Sentinel/Log Analytics.
+
+---
+
+## Out-of-Scope / Decisions Deferred
+
+- Direct Line ASE on AKS (unsupported pattern; not pursued)
+- Private endpoint on Bot Service resource itself (breaks Teams channel)
+- SSL forward-decrypt on Bot Service traffic (incompatible with MS SDK cert pinning)
