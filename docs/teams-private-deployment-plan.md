@@ -125,3 +125,19 @@ Deploy the RX Commercial Intelligence Teams bot with **zero direct public exposu
 | 2.2.10 | Enable PAN traffic logging — forward to SIEM (Sentinel/Splunk) | PAN admin docs |
 
 **Deliverable:** PAN config commit + traffic logs showing AKS → MS allow flows during smoke test.
+
+---
+
+## Phase 3 — Bot Service Configuration
+
+### Task 3.1 — Configure Bot resource
+
+| Step | Detail | Reference |
+|------|--------|-----------|
+| 3.1.1 | Set messaging endpoint on Bot resource: `https://bot.riyadhair.com/api/messages` | [Configure bot endpoint](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-manage-overview?view=azure-bot-service-4.0) |
+| 3.1.2 | Enable Microsoft Teams channel: `az bot msteams create -g rg-neu-n-aks-01 -n azbotndapcomm` | [Connect a bot to Microsoft Teams](https://learn.microsoft.com/en-us/azure/bot-service/channel-connect-teams) |
+| 3.1.3 | Confirm Bot resource uses System-Assigned Managed Identity OR single-tenant App Registration (recommended: User-Assigned MI for prod) | [Bot identity types](https://learn.microsoft.com/en-us/azure/bot-service/bot-builder-authentication?view=azure-bot-service-4.0&tabs=userassigned) |
+| 3.1.4 | If using App Registration: confirm App ID + secret in Key Vault, mounted to pod via CSI Secrets Store driver | [CSI Secrets Store on AKS](https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-driver) |
+| 3.1.5 | Confirm pod env vars: `MicrosoftAppId`, `MicrosoftAppPassword` (or `MicrosoftAppType=UserAssignedMSI` + `MicrosoftAppTenantId`) | [Bot Framework auth env vars](https://learn.microsoft.com/en-us/azure/bot-service/bot-builder-authentication) |
+
+**Deliverable:** Teams channel showing "Running" status in portal; bot endpoint validated.
