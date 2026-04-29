@@ -93,3 +93,35 @@ Deploy the RX Commercial Intelligence Teams bot with **zero direct public exposu
 | 1.3.2 | Validate cert chain: `curl -vI https://bot.riyadhair.com/api/messages` from internet (should return 403 — not from Bot Service IP — but TLS handshake must succeed) | n/a |
 
 **Deliverable:** App Gateway healthy, NSG locked to `AzureBotService`, DNS resolves, TLS valid.
+
+---
+
+## Phase 2 — Outbound Path (AKS → Bot Service via Palo Alto NGFW)
+
+> **Note:** RX uses Palo Alto VM-Series in the hub VNet. There is **no Azure Firewall** in this architecture. All AKS egress is forced through Palo Alto via UDR.
+
+### Task 2.1 — Force AKS egress through Palo Alto
+
+| Step | Detail | Reference |
+|------|--------|-----------|
+| 2.1.1 | Create Route Table on AKS subnet (or update existing) | [User-defined routes](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview) |
+| 2.1.2 | Add route: `0.0.0.0/0` → next-hop type `VirtualAppliance`, IP = Palo Alto trust-NIC private IP | [Egress with UDR](https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype) |
+| 2.1.3 | Set AKS cluster `outboundType=userDefinedRouting` if not already (one-time at cluster creation, or via redeploy) | [Outbound types](https://learn.microsoft.com/en-us/azure/aks/egress-outboundtype#outbound-type-of-userdefinedrouting) |
+| 2.1.4 | Add bypass routes for Azure control plane (next-hop `Internet`): `AzureCloud`, `AzureContainerRegistry`, `AzureMonitor`, `AzureKeyVault` service tags so AKS nodes don't lose connectivity to control plane through PAN | [Required egress for AKS](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic#required-network-rules-and-fqdn--application-rules-for-aks-clusters) |
+
+### Task 2.2 — Palo Alto rules for Bot Service / Foundry / Power BI traffic
+
+| Step | Detail | Reference |
+|------|--------|-----------|
+| 2.2.1 | Create Address Object: AKS pod CIDR + node CIDR (source) | PAN admin docs |
+| 2.2.2 | Create FQDN Object Group `MS-BotService`: `*.botframework.com`, `smba.trafficmanager.net`, `*.skype.com`, `directline.botframework.com` | [Bot Service required URLs](https://learn.microsoft.com/en-us/azure/bot-service/bot-builder-howto-deploy-azure?view=azure-bot-service-4.0) |
+| 2.2.3 | Create FQDN Object Group `MS-Identity`: `login.botframework.com`, `login.microsoftonline.com`, `login.microsoft.com`, `*.login.microsoftonline.com` | [Entra ID endpoints](https://learn.microsoft.com/en-us/entra/identity-platform/authentication-national-cloud) |
+| 2.2.4 | Create FQDN Object Group `MS-Foundry`: `*.services.ai.azure.com`, `*.cognitiveservices.azure.com`, `*.openai.azure.com` | [AI Foundry networking](https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/network-isolation) |
+| 2.2.5 | Create FQDN Object Group `MS-PowerBI`: `api.powerbi.com`, `*.analysis.windows.net` | [Power BI URLs and IPs](https://learn.microsoft.com/en-us/power-bi/admin/power-bi-allow-list-urls) |
+| 2.2.6 | Create FQDN Object Group `MS-Platform`: `*.azurecr.io`, `mcr.microsoft.com`, `*.vault.azure.net`, `*.applicationinsights.azure.com`, `*.monitor.azure.com`, `*.blob.core.windows.net` | [AKS required outbound FQDNs](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic) |
+| 2.2.7 | Security rule: source = AKS, destination = all 5 FQDN groups, app = `ssl, web-browsing, ms-azure, ms-teams`, action = Allow, log = enabled | PAN admin docs |
+| 2.2.8 | Default rule for AKS source: action = Deny, log = enabled | PAN admin docs |
+| 2.2.9 | SSL Decryption exclusion list (do NOT decrypt — preserves MS SDK cert pinning): `*.botframework.com`, `*.skype.com`, `smba.trafficmanager.net`, `*.microsoftonline.com`, `*.azurecr.io`, `*.vault.azure.net` | [Microsoft 365 SSL exemption guidance](https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-network-connectivity-principles?view=o365-worldwide#bp4) |
+| 2.2.10 | Enable PAN traffic logging — forward to SIEM (Sentinel/Splunk) | PAN admin docs |
+
+**Deliverable:** PAN config commit + traffic logs showing AKS → MS allow flows during smoke test.
