@@ -246,3 +246,64 @@ Deploy the RX Commercial Intelligence Teams bot with **zero direct public exposu
 - Direct Line ASE on AKS (unsupported pattern; not pursued)
 - Private endpoint on Bot Service resource itself (breaks Teams channel)
 - SSL forward-decrypt on Bot Service traffic (incompatible with MS SDK cert pinning)
+
+---
+
+## Appendix A — Authoritative IP Ranges & Ports for Bot Egress/Ingress
+
+### A.1 Inbound to bot — Application Gateway NSG
+
+The bot does **not** talk directly to Teams clients. Inbound traffic comes from **Azure Bot Service**, which Microsoft publishes as a service tag.
+
+| Property | Value |
+|---|---|
+| Source | `AzureBotService` service tag (auto-updated by Azure) |
+| Protocol | TCP |
+| Port | **443** only |
+
+**Get the current IP list (one-off audit / non-Azure-aware firewalls):**
+
+```bash
+az network list-service-tags --location <region> \
+  --query "values[?name=='AzureBotService'].properties.addressPrefixes" -o tsv
+```
+
+Or download the static published file:
+- https://www.microsoft.com/en-us/download/details.aspx?id=56519
+- File: `ServiceTags_Public_<date>.json` → search for `"name": "AzureBotService"`
+
+**Reference:** [Service tags overview](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview)
+
+> **For NSG rules in this deployment, always use the service tag name — not raw IP ranges. Azure auto-updates the tag.**
+
+### A.2 Outbound from bot — Palo Alto NGFW
+
+Microsoft's published guidance is to use **FQDNs, not IPs** for Bot Service egress (IPs rotate). All FQDNs use TCP 443.
+
+| FQDN Group | FQDNs | Purpose |
+|---|---|---|
+| `MS-BotService` | `*.botframework.com`, `smba.trafficmanager.net`, `*.skype.com`, `directline.botframework.com` | Bot Service control plane + channel transport |
+| `MS-Identity` | `login.botframework.com`, `login.microsoftonline.com`, `login.microsoft.com`, `*.login.microsoftonline.com` | Bot auth + Entra ID tokens |
+| `MS-Foundry` | `*.services.ai.azure.com`, `*.cognitiveservices.azure.com`, `*.openai.azure.com` | Foundry Prompt Agents |
+| `MS-PowerBI` | `api.powerbi.com`, `*.analysis.windows.net` | Power BI executeQueries |
+| `MS-Platform` | `*.azurecr.io`, `mcr.microsoft.com`, `*.vault.azure.net`, `*.applicationinsights.azure.com`, `*.monitor.azure.com`, `*.blob.core.windows.net` | ACR pulls, Key Vault, telemetry |
+
+**Port:** TCP **443** for all of the above. No other ports required.
+
+**SSL decryption exclusions** (do NOT decrypt — preserves SDK cert pinning):
+- `*.botframework.com`
+- `*.skype.com`
+- `smba.trafficmanager.net`
+- `*.microsoftonline.com`
+- `*.azurecr.io`
+- `*.vault.azure.net`
+
+### A.3 References
+
+- [Bot Framework Security & Privacy FAQ](https://learn.microsoft.com/en-us/azure/bot-service/bot-service-resources-faq-security)
+- [Bot Service required URLs](https://learn.microsoft.com/en-us/azure/bot-service/bot-builder-howto-deploy-azure?view=azure-bot-service-4.0)
+- [Service tags reference — AzureBotService](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags)
+- [AKS required outbound FQDNs](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic)
+- [Microsoft 365 SSL decryption guidance](https://learn.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-network-connectivity-principles?view=o365-worldwide#bp4)
+
+> **Note:** Teams **client** IP/port ranges (M365 endpoints API) are **not relevant** to this deployment. RX corporate Teams clients reach Microsoft 365 via existing M365 connectivity; the bot only talks to Azure Bot Service.
