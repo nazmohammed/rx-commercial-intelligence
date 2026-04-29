@@ -141,3 +141,35 @@ Deploy the RX Commercial Intelligence Teams bot with **zero direct public exposu
 | 3.1.5 | Confirm pod env vars: `MicrosoftAppId`, `MicrosoftAppPassword` (or `MicrosoftAppType=UserAssignedMSI` + `MicrosoftAppTenantId`) | [Bot Framework auth env vars](https://learn.microsoft.com/en-us/azure/bot-service/bot-builder-authentication) |
 
 **Deliverable:** Teams channel showing "Running" status in portal; bot endpoint validated.
+
+---
+
+## Phase 4 — End-to-End Validation
+
+### Task 4.1 — Inbound validation
+
+| Step | Detail | Expected Result |
+|------|--------|-----------------|
+| 4.1.1 | From RX laptop: `curl -i https://bot.riyadhair.com/api/messages` | `403 Forbidden` (NSG blocks non-Bot-Service IPs) |
+| 4.1.2 | App Gateway backend health: `az network application-gateway show-backend-health -g <rg> -n <appgw>` | All backends `Healthy` |
+| 4.1.3 | Azure Portal → Bot resource → **Test in Web Chat** → type "hi" | Bot replies; pod logs show `POST /api/messages` |
+
+### Task 4.2 — Outbound validation
+
+| Step | Detail | Expected Result |
+|------|--------|-----------------|
+| 4.2.1 | `kubectl exec` into bot pod, `curl -I https://login.botframework.com/v1/.well-known/openidconfiguration` | `HTTP/2 200` |
+| 4.2.2 | Same pod: `curl -I https://smba.trafficmanager.net/teams/` | `HTTP 401` or `404` (DNS+TLS succeed) |
+| 4.2.3 | PAN traffic log filter `src=<AKS-pod-IP> action=allow` | Flows to all 5 FQDN groups visible |
+
+### Task 4.3 — Teams channel validation
+
+| Step | Detail | Expected Result |
+|------|--------|-----------------|
+| 4.3.1 | Build Teams app manifest zip (icons + manifest.json) | [Teams app manifest schema](https://learn.microsoft.com/en-us/microsoftteams/platform/resources/schema/manifest-schema) |
+| 4.3.2 | Sideload via Teams Admin Center → "Manage apps" → Upload (or use Teams Toolkit) | [Upload custom Teams apps](https://learn.microsoft.com/en-us/microsoftteams/platform/concepts/deploy-and-publish/apps-upload) |
+| 4.3.3 | Target a small test group in Teams app permission policy | [App permission policies](https://learn.microsoft.com/en-us/microsoftteams/teams-app-permission-policies) |
+| 4.3.4 | From Teams desktop client: send "hi" to the bot | Bot replies with greeting card |
+| 4.3.5 | Send a real query: "what is the load factor of RUH-LHR October 2025" | Adaptive Card with summary, findings, DAX |
+
+**Deliverable:** Screenshots of all 4.x.x checks passing; sign-off from RX security.
