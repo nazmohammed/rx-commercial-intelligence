@@ -46,6 +46,7 @@ class ChatResponse(BaseModel):
     card: dict
     dax: str
     summary: str
+    data: list[dict] = []
     conversation_id: str
     user: str
 
@@ -93,6 +94,7 @@ async def chat(
             ),
             dax="",
             summary="",
+            data=[],
             conversation_id=conversation_id,
             user=user.upn,
         )
@@ -101,6 +103,7 @@ async def chat(
         card=result["card"],
         dax=result.get("dax", ""),
         summary=result.get("summary", ""),
+        data=result.get("data", []),
         conversation_id=conversation_id,
         user=user.upn,
     )
