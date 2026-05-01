@@ -2,7 +2,7 @@
   "model": {
     "name": "Routes Insights - Flyr",
     "workspace_id": "4435d932-4c62-46fd-ba3f-dd41a0d6d2f4",
-    "dataset_id": "b047fe92-8b73-4f06-a2ae-e75b9b9363a0",
+    "dataset_id": "192c798b-0a94-4791-8520-0922452167aa",
     "description": "Riyadh Air commercial semantic model covering flown actuals, forward bookings, forecasts, and targets at Segment (leg) and OD (origin-destination) grain."
   },
   "business_context": {
@@ -248,7 +248,7 @@
   "model": {
     "name": "Routes Insights - Flyr",
     "workspace_id": "4435d932-4c62-46fd-ba3f-dd41a0d6d2f4",
-    "dataset_id": "b047fe92-8b73-4f06-a2ae-e75b9b9363a0"
+    "dataset_id": "192c798b-0a94-4791-8520-0922452167aa"
   },
   "tables": [
     {
