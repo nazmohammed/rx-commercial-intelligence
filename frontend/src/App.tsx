@@ -1,14 +1,19 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import Header from './components/Header';
 import InputBar from './components/InputBar';
 import OutputCard from './components/OutputCard';
 import FAQCard, { DEFAULT_FAQS } from './components/FAQCard';
 import LoadingCard from './components/LoadingCard';
+import KPIStrip from './components/KPIStrip';
+import ChartPanel from './components/ChartPanel';
 import { postChat, ChatResponse } from './api/client';
 import {
   SAMPLE_CARD,
   SAMPLE_DAX,
+  SAMPLE_KPIS,
   SAMPLE_QUESTION,
+  SAMPLE_ROWS,
   SAMPLE_SUMMARY,
 } from './sampleCard';
 
@@ -88,16 +93,29 @@ export default function App() {
               </div>
             )}
 
-            {outputs.map((o) => (
-              <OutputCard
-                key={`${o.conversation_id}-${o.timestamp}`}
-                question={o.question}
-                card={o.card}
-                dax={o.dax}
-                summary={o.summary}
-                timestamp={o.timestamp}
-              />
-            ))}
+            {outputs.map((o, idx) => {
+              // First (newest) sample output also shows KPIs + chart in dev.
+              const showAnalytics = idx === 0 && o.conversation_id === 'sample';
+              return (
+                <motion.div
+                  key={`${o.conversation_id}-${o.timestamp}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-4"
+                >
+                  {showAnalytics && <KPIStrip kpis={SAMPLE_KPIS} />}
+                  {showAnalytics && <ChartPanel rows={SAMPLE_ROWS} />}
+                  <OutputCard
+                    question={o.question}
+                    card={o.card}
+                    dax={o.dax}
+                    summary={o.summary}
+                    timestamp={o.timestamp}
+                  />
+                </motion.div>
+              );
+            })}
           </section>
 
           {/* FAQ chips */}
