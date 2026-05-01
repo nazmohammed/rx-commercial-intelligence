@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps: build tools only if a wheel doesn't ship for our pinned versions.
+# pip-only install keeps the layer small.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+
+# In Container Apps, the frontend nginx sidecar reverse-proxies /api/* to
+# this backend on localhost:8000.
+EXPOSE 8000
+
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
