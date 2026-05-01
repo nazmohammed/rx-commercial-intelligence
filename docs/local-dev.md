@@ -21,7 +21,7 @@ Your Entra ID account needs:
 |---|---|---|
 | Azure AI Foundry project | `Azure AI Developer` | Invoke the two agents |
 | PBI Workspace `4435d932…` | `Member` (min) | Query the dataset |
-| PBI Dataset `b047fe92…` | `Build` permission | For `executeQueries` API |
+| PBI Dataset `192c798b…` | `Build` permission | For `executeQueries` API |
 
 `DefaultAzureCredential` will use your `az login` token for both Foundry and PBI — no service principal required for local dev.
 
@@ -63,7 +63,7 @@ FOUNDRY_PROJECT_ENDPOINT=https://<project>.services.ai.azure.com/api/projects/<n
 FOUNDRY_QUERY_ENGINE_AGENT_ID=asst_xxxxx
 FOUNDRY_ANALYST_AGENT_ID=asst_yyyyy
 PBI_WORKSPACE_ID=4435d932-4c62-46fd-ba3f-dd41a0d6d2f4
-PBI_DATASET_ID=b047fe92-8b73-4f06-a2ae-e75b9b9363a0
+PBI_DATASET_ID=192c798b-0a94-4791-8520-0922452167aa
 ```
 
 Optional:
