@@ -5,43 +5,19 @@ import InputBar from './components/InputBar';
 import OutputCard from './components/OutputCard';
 import FAQCard, { DEFAULT_FAQS } from './components/FAQCard';
 import LoadingCard from './components/LoadingCard';
-import KPIStrip from './components/KPIStrip';
 import ChartPanel from './components/ChartPanel';
+import EmptyState from './components/EmptyState';
 import { postChat, ChatResponse } from './api/client';
-import {
-  SAMPLE_CARD,
-  SAMPLE_DAX,
-  SAMPLE_KPIS,
-  SAMPLE_QUESTION,
-  SAMPLE_ROWS,
-  SAMPLE_SUMMARY,
-} from './sampleCard';
+import { deriveChart } from './lib/deriveChart';
 
 interface OutputEntry extends ChatResponse {
   question: string;
   timestamp: number;
 }
 
-// In dev mode, seed a sample Adaptive Card so the UI can be previewed
-// without the FastAPI backend running. Real backend calls still work
-// when uvicorn is up — this is just the initial state.
-const INITIAL_OUTPUTS: OutputEntry[] = import.meta.env.DEV
-  ? [
-      {
-        card: SAMPLE_CARD,
-        dax: SAMPLE_DAX,
-        summary: SAMPLE_SUMMARY,
-        conversation_id: 'sample',
-        user: 'preview@vendor.riyadhair.com',
-        question: SAMPLE_QUESTION,
-        timestamp: Date.now(),
-      },
-    ]
-  : [];
-
 export default function App() {
   const [input, setInput] = useState('');
-  const [outputs, setOutputs] = useState<OutputEntry[]>(INITIAL_OUTPUTS);
+  const [outputs, setOutputs] = useState<OutputEntry[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,13 +33,10 @@ export default function App() {
     try {
       const resp = await postChat(question, conversationId);
       setConversationId(resp.conversation_id);
-      const entry: OutputEntry = {
-        ...resp,
-        question,
-        timestamp: Date.now(),
-      };
-      // newest on top
-      setOutputs((prev) => [entry, ...prev]);
+      setOutputs((prev) => [
+        { ...resp, question, timestamp: Date.now() },
+        ...prev,
+      ]);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -71,13 +44,14 @@ export default function App() {
     }
   }
 
+  const isEmpty = outputs.length === 0 && !loading && !error;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="flex-1 mx-auto max-w-5xl w-full px-6 py-6">
+      <main className="flex-1 mx-auto max-w-6xl w-full px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Outputs feed (2/3 width on desktop, full on mobile) */}
           <section className="lg:col-span-2 space-y-4">
             {loading && <LoadingCard />}
 
@@ -87,15 +61,10 @@ export default function App() {
               </div>
             )}
 
-            {outputs.length === 0 && !loading && !error && (
-              <div className="bg-white rounded-xl shadow-card border border-rx-purple/10 p-6 text-rx-subtle">
-                Ask a question to get started, or pick a suggestion on the right.
-              </div>
-            )}
+            {isEmpty && <EmptyState onPick={setInput} />}
 
-            {outputs.map((o, idx) => {
-              // First (newest) sample output also shows KPIs + chart in dev.
-              const showAnalytics = idx === 0 && o.conversation_id === 'sample';
+            {outputs.map((o) => {
+              const chart = deriveChart(o.data);
               return (
                 <motion.div
                   key={`${o.conversation_id}-${o.timestamp}`}
@@ -104,8 +73,7 @@ export default function App() {
                   transition={{ duration: 0.35 }}
                   className="space-y-4"
                 >
-                  {showAnalytics && <KPIStrip kpis={SAMPLE_KPIS} />}
-                  {showAnalytics && <ChartPanel rows={SAMPLE_ROWS} />}
+                  {chart && <ChartPanel chart={chart} />}
                   <OutputCard
                     question={o.question}
                     card={o.card}
@@ -118,7 +86,6 @@ export default function App() {
             })}
           </section>
 
-          {/* FAQ chips */}
           <aside className="space-y-3">
             <div className="text-xs uppercase tracking-wide text-rx-subtle font-semibold">
               Try asking
