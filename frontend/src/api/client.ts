@@ -7,6 +7,8 @@ export interface ChatResponse {
   card: Record<string, unknown>;
   dax: string;
   summary: string;
+  /** Raw rows from Power BI — shape depends on the DAX query. */
+  data: Record<string, unknown>[];
   conversation_id: string;
   user: string;
 }
