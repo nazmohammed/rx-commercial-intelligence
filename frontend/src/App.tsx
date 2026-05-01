@@ -5,15 +5,38 @@ import OutputCard from './components/OutputCard';
 import FAQCard, { DEFAULT_FAQS } from './components/FAQCard';
 import LoadingCard from './components/LoadingCard';
 import { postChat, ChatResponse } from './api/client';
+import {
+  SAMPLE_CARD,
+  SAMPLE_DAX,
+  SAMPLE_QUESTION,
+  SAMPLE_SUMMARY,
+} from './sampleCard';
 
 interface OutputEntry extends ChatResponse {
   question: string;
   timestamp: number;
 }
 
+// In dev mode, seed a sample Adaptive Card so the UI can be previewed
+// without the FastAPI backend running. Real backend calls still work
+// when uvicorn is up — this is just the initial state.
+const INITIAL_OUTPUTS: OutputEntry[] = import.meta.env.DEV
+  ? [
+      {
+        card: SAMPLE_CARD,
+        dax: SAMPLE_DAX,
+        summary: SAMPLE_SUMMARY,
+        conversation_id: 'sample',
+        user: 'preview@vendor.riyadhair.com',
+        question: SAMPLE_QUESTION,
+        timestamp: Date.now(),
+      },
+    ]
+  : [];
+
 export default function App() {
   const [input, setInput] = useState('');
-  const [outputs, setOutputs] = useState<OutputEntry[]>([]);
+  const [outputs, setOutputs] = useState<OutputEntry[]>(INITIAL_OUTPUTS);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
