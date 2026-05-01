@@ -129,3 +129,38 @@ export const SAMPLE_SUMMARY =
   'RUH–DXB led revenue at SAR 18.4M, with RUH–LHR close behind at SAR 16.9M. The top 5 contributed 62% of total system revenue.';
 
 export const SAMPLE_QUESTION = 'Top 5 routes by revenue in the last 30 days';
+
+// ── Structured data (drives KPIs + charts) ─────────────────────────────────
+//
+// In production this will arrive as a `data` field on the /api/chat
+// response. For now it's hardcoded so the chart components have something
+// to render in dev mode.
+
+export interface SampleRow {
+  route: string;
+  revenue: number; // SAR millions
+  loadFactor: number; // 0..1
+  yieldPerRpk: number; // SAR
+}
+
+export const SAMPLE_ROWS: SampleRow[] = [
+  { route: 'RUH–DXB', revenue: 18.4, loadFactor: 0.88, yieldPerRpk: 0.42 },
+  { route: 'RUH–LHR', revenue: 16.9, loadFactor: 0.81, yieldPerRpk: 0.55 },
+  { route: 'RUH–CAI', revenue: 11.2, loadFactor: 0.84, yieldPerRpk: 0.31 },
+  { route: 'RUH–IST', revenue: 9.8, loadFactor: 0.79, yieldPerRpk: 0.34 },
+  { route: 'RUH–JFK', revenue: 8.6, loadFactor: 0.73, yieldPerRpk: 0.61 },
+];
+
+export interface KpiTile {
+  label: string;
+  value: string;
+  delta?: string; // e.g. "+12% vs prior 30d"
+  tone?: 'good' | 'warn' | 'neutral';
+}
+
+export const SAMPLE_KPIS: KpiTile[] = [
+  { label: 'Total revenue (top 5)', value: 'SAR 64.9M', delta: '+8.2% vs prior 30d', tone: 'good' },
+  { label: 'Avg load factor', value: '81%', delta: '+1.4 pp', tone: 'good' },
+  { label: 'Avg yield / RPK', value: 'SAR 0.45', delta: '−2.1%', tone: 'warn' },
+  { label: 'Routes flagged', value: '1', delta: 'RUH–JFK', tone: 'warn' },
+];
