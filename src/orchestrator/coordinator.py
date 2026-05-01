@@ -150,6 +150,9 @@ class Coordinator:
                     "card": card,
                     "dax": dax,
                     "summary": parsed["summary"],
+                    # Raw PBI rows for the web frontend to draw charts/tables.
+                    # Shape: list of {col: value, ...} dicts. May be empty.
+                    "data": pbi_result.get("tables", []) if isinstance(pbi_result, dict) else [],
                 }
 
         finally:

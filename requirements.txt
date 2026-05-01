@@ -1,7 +1,12 @@
 # RX-Coordinator — M365 Agents SDK + Bot Framework
+# (kept for now; the Container Apps front door uses FastAPI instead — see below)
 botbuilder-core==4.16.2
 botbuilder-integration-aiohttp==4.16.2
 aiohttp==3.10.5
+
+# FastAPI front door (Container Apps web app — pivot from Teams bot)
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
 
 # Azure AI Foundry — invoke prompt agents via Responses API
 # NOTE: azure-ai-projects>=2.0.0 is required for the `agent_reference` extra_body

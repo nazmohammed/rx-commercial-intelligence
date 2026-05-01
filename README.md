@@ -38,7 +38,7 @@ AI agent embedded in Microsoft Teams that enables Riyadh Air's Cx Commercial Ins
                      │                      │
                      │  Routes Insights -   │
                      │  Flyr Semantic Model │
-                     │  Dataset: b047fe92   │
+                     │  Dataset: 192c798b   │
                      │  Workspace: 4435d932 │
                      └──────────────────────┘
 ```
@@ -151,7 +151,7 @@ Full walkthrough: [docs/local-dev.md](docs/local-dev.md)
 | `FOUNDRY_QUERY_ENGINE_AGENT_ID` | Agent ID for RX-QueryEngine | Local + Prod |
 | `FOUNDRY_ANALYST_AGENT_ID` | Agent ID for RX-Analyst | Local + Prod |
 | `PBI_WORKSPACE_ID` | Power BI workspace (`4435d932…`) | Local + Prod |
-| `PBI_DATASET_ID` | Power BI dataset (`b047fe92…`) | Local + Prod |
+| `PBI_DATASET_ID` | Power BI dataset (`192c798b…`) | Local + Prod |
 | `TEST_USER_UPN` | UPN to impersonate for RLS | Local only |
 | `BOT_APP_ID` | Entra ID app registration for the bot | Prod (Teams) |
 | `BOT_APP_PASSWORD` | Bot client secret | Prod (Teams) |
