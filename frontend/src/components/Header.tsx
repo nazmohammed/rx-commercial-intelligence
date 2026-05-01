@@ -67,7 +67,7 @@ export default function Header() {
             Commercial Intelligence
           </div>
           <div className="text-rx-subtle text-[11px] uppercase tracking-[0.18em] mt-0.5">
-            Powered by RX Insights
+            Powered by ROAA
           </div>
         </div>
 
