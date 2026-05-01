@@ -1,6 +1,5 @@
 import {
   Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Legend,
@@ -85,10 +84,11 @@ export default function ChartPanel({ rows }: ChartPanelProps) {
                 borderRadius: 8,
                 fontSize: 12,
               }}
-              formatter={(value: number, name: string) => {
-                if (name === 'Revenue') return [`SAR ${value.toFixed(1)}M`, name];
-                if (name === 'Load factor') return [`${value}%`, name];
-                return [value, name];
+              formatter={(value, name) => {
+                const v = typeof value === 'number' ? value : Number(value);
+                if (name === 'Revenue') return [`SAR ${v.toFixed(1)}M`, name];
+                if (name === 'Load factor') return [`${v}%`, name];
+                return [String(value), String(name)];
               }}
             />
             <Legend wrapperStyle={{ display: 'none' }} />
