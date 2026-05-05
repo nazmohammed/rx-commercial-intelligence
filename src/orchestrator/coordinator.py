@@ -78,6 +78,7 @@ class Coordinator:
                 qe_resp = await openai_client.responses.create(
                     input=user_question,
                     extra_body=_agent_reference(self.query_engine_agent_name),
+                    timeout=30.0,
                 )
                 qe_response = qe_resp.output_text or ""
 
@@ -126,6 +127,7 @@ class Coordinator:
                 analyst_resp = await openai_client.responses.create(
                     input=analyst_prompt,
                     extra_body=_agent_reference(self.analyst_agent_name),
+                    timeout=30.0,
                 )
                 analyst_response = analyst_resp.output_text or ""
 
